@@ -6,8 +6,10 @@ using System.Text;
 
 namespace AppCliente
 {
-    internal class Client
+    public class Client
     {
+        private static readonly SettingsManager settingsMngr = new SettingsManager();
+
         private static void Main(string[] args)
         {
             Console.WriteLine("Iniciando Aplicacion Cliente....!!!");
@@ -16,12 +18,16 @@ namespace AppCliente
             AddressFamily.InterNetwork,
                 SocketType.Stream,
                     ProtocolType.Tcp);
+            string ipServer = settingsMngr.ReadSettings(ClientConfig.serverIPconfigkey);
+            string ipClient = settingsMngr.ReadSettings(ClientConfig.clientIPconfigkey);
+            int serverPort = int.Parse(settingsMngr.ReadSettings(ClientConfig.serverPortconfigkey));
 
-            var localEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 0);
+            var localEndPoint = new IPEndPoint(IPAddress.Parse(ipClient), 0);
             socketCliente.Bind(localEndPoint);
-            var serverEndpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5000);
+            var serverEndpoint = new IPEndPoint(IPAddress.Parse(ipServer), serverPort);
             socketCliente.Connect(serverEndpoint);
             Console.WriteLine("Cliente Conectado al Servidor...!!!");
+
             Console.WriteLine("\nBienvenido al Sistema Client");
             Console.WriteLine("Opciones validas: ");
             Console.WriteLine("Alta de usuario");
@@ -31,7 +37,7 @@ namespace AppCliente
             Console.WriteLine("Consultar perfil especifico");
             Console.WriteLine("Mensajes");
             Console.WriteLine("Configuracion");
-            Console.WriteLine("Logout");
+            Console.WriteLine("Exit");
             Console.WriteLine("Ingrese su opcion: ");
             bool parar = false;
             while (!parar)
@@ -39,25 +45,16 @@ namespace AppCliente
                 String mensaje = Console.ReadLine();
                 switch (mensaje)
                 {
-                    case "Alta de usuario":
-                        _logged = await CaseUpUser();
+                    case "alta usuario":
+
                         break;
 
                     case "Alta de perfil de trabajo":
-                        if (_logged)
-                        {
-                            await CaseUpProfile();
-                        }
-                        else
-                        {
-                            Console.WriteLine("Tiene que estar logueado para utilizar esta funcionalidad.");
-                        }
+                        //CaseUpProfile();
+
                         break;
 
                     case "Asociar foto a perfil de trabajo":
-                        if (_logged)
-                        {
-                        }
                         break;
                 }
                 if (mensaje.Equals("Exit", StringComparison.InvariantCultureIgnoreCase))
@@ -131,10 +128,6 @@ namespace AppCliente
 
         private static void CaseUpUser()
         {
-            if (!_logged)
-            {
-                Console.WriteLine("Ingrese nombre de usuario")
-            }
         }
     }
 }

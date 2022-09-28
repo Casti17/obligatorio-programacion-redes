@@ -58,6 +58,13 @@ namespace AppServidor
                 bool clienteConectado = true;
                 while (clienteConectado)
                 {
+                    /// PARA RECIBO DE ARCHIVOS /////
+
+                    /*Console.WriteLine("Antes de recibir el archivo");
+                    var fileCommonHandler = new FileCommsHandler(socketCliente);
+                    fileCommonHandler.ReceiveFile();
+                    Console.WriteLine("Archivo recibido!!");*/
+
                     // Primero recibo el largo del mensaje en 4 bytes
                     byte[] dataLength = new byte[Constantes.LargoFijo];
                     int offset = 0;
