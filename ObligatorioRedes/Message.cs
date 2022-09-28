@@ -6,6 +6,12 @@ namespace Domain
 {
     public class Message
     {
+        public Message(string receptor, string sender, string msg)
+        {
+            Receptor = receptor;
+            Sender = sender;
+            MessageBody = msg;
+        }
         public string MessageBody { get; set; }
         public string Sender { get; set; }
         public string Receptor { get; set; }

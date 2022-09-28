@@ -6,6 +6,12 @@ namespace Domain
 {
     public class User
     {
+        public User(string name, string surname, string username)
+        {
+            Name = name;
+            Surname = surname;
+            Username = username;
+        }
         public string Name { get; set; }
         public string Surname { get; set; }
         public string Username { get; set; }
