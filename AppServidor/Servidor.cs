@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using BusinessLogic;
 
 namespace AppServidor
 {
@@ -30,6 +31,7 @@ namespace AppServidor
             socketServer.Listen(100); // Pongo al Servidor en modo escucha
             int clientes = 0;
             bool salir = false;
+            UserLogic.CreateUser("nomDeUs", "Carlo", "Mano");
 
             while (!salir)
             {
