@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Security.Cryptography.X509Certificates;
 using AppServidor.Domain;
 using Domain;
 
 namespace Repositories
 {
-    public class UserRepository
+    public class UserRepository : IQueryable
     {
         private IList<User> _userRepository;
         public UserRepository()
@@ -21,15 +24,21 @@ namespace Repositories
 
         public User GetUser(string userName)
         {
-            User returnUser = null;
-            foreach (var user in _userRepository)
-            {
-                if (user.Username == userName)
-                {
-                    returnUser = user;
-                }
-            }
-            return returnUser;
+            return _userRepository.Where(u => u.Username.Equals(userName)) as User;
         }
+
+        public bool Exists(string userName)
+        {
+            return _userRepository.Any(x => x.Username.Equals(userName));
+        }
+
+        public IEnumerator GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Type ElementType { get; }
+        public Expression Expression { get; }
+        public IQueryProvider Provider { get; }
     }
 }
