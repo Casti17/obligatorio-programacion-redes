@@ -125,7 +125,7 @@ namespace AppCliente
                 correctFormat = Regex.IsMatch(name, @"^[a-zA-Z]+$");
             }
             string user = $"{name}#{lastName}#{userName}";
-            //clientHandler.CreateUser(user);
+            clientHandler.CreateUser(user);
         }
 
         public static void CaseCreateWorkProfile()

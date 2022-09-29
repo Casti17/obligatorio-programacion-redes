@@ -1,71 +1,26 @@
-﻿using Protocolo;
-using System;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
-using BusinessLogic;
-
-namespace AppServidor
+﻿namespace AppServidor
 {
     internal class Servidor
     {
-        private static readonly SettingsManager settingsMng = new SettingsManager();
-
         public static void Main(string[] args)
         {
-            Console.WriteLine("Iniciando Aplicacion Servidor....!!!");
-
-            var socketServer = new Socket(
-            AddressFamily.InterNetwork,
-                SocketType.Stream,
-                    ProtocolType.Tcp);
-
-            string ipServidor = settingsMng.ReadSettings(ServerConfig.ServerIPConfigKey);
-            int puerto = int.Parse(settingsMng.ReadSettings(ServerConfig.ServerPortConfigKey));
-
-            var localEndpoint = new IPEndPoint(IPAddress.Parse(ipServidor), puerto);
-            // puertos 0 a 65535   pero del 1 al 1024 estan reservados
-
-            socketServer.Bind(localEndpoint); // vinculo el socket al EndPoint
-            socketServer.Listen(100); // Pongo al Servidor en modo escucha
-            int clientes = 0;
-            bool salir = false;
-            UserLogic.CreateUser("nomDeUs", "Carlo", "Mano");
-
-            while (!salir)
-            {
-                var socketClient = socketServer.Accept();
-                clientes++;
-                int nro = clientes;
-                Console.WriteLine("Acepte un nuevo pedido de Conexion");
-                new Thread(() => ManejarCliente(socketClient, nro)).Start();
-            }
-
-            Console.ReadLine();
-
+            ServerDisplay serverDisplay = new ServerDisplay();
+            serverDisplay.StartServer();
             // Como hacemos para aceptar N clientes.
             // Como hacemos para enviar y recibir mensajes.
 
             // Cierro el socket
-            socketServer.Shutdown(SocketShutdown.Both);
-            socketServer.Close();
+            //socketServer.Shutdown(SocketShutdown.Both);
+            //socketServer.Close();
         }
 
-        private static void ManejarCliente(Socket socketCliente, int nro)
-        {
-            try
-            {
-                Console.WriteLine("Cliente {0} conectado", nro);
-                bool clienteConectado = true;
-                while (clienteConectado)
-                {
+        /*
                     /// PARA RECIBO DE ARCHIVOS /////
 
                     /*Console.WriteLine("Antes de recibir el archivo");
                     var fileCommonHandler = new FileCommsHandler(socketCliente);
                     fileCommonHandler.ReceiveFile();
-                    Console.WriteLine("Archivo recibido!!");*/
+                    Console.WriteLine("Archivo recibido!!"); //
 
                     // Primero recibo el largo del mensaje en 4 bytes
                     byte[] dataLength = new byte[Constantes.LargoFijo];
@@ -115,6 +70,6 @@ namespace AppServidor
             {
                 Console.WriteLine("Cliente Desconectado!");
             }
-        }
+        }*/
     }
 }

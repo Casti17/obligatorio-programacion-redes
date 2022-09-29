@@ -1,21 +1,31 @@
-﻿namespace AppCliente
+﻿using Communication;
+using System;
+using System.Net.Sockets;
+
+namespace AppCliente
 {
     public class ClientHandler
     {
-        /*public Socket clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        public Socket clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
         public ClientHandler()
         {
         }
+
         public void CreateUser(string user)
         {
             var header = new Header(Commands.CreateUser, user.Length);
-            Protocol protocol = new Protocol() { header = header, Body = user };
-            SocketHelper socketHelper = new SocketHelper(clientSocket);
+            Request protocol = new Request() { Header = header, Body = user };
+            SocketHelper socketHelper = new SocketHelper(this.clientSocket);
             try
             {
-                socketHelper.
+                socketHelper.SendRequest(protocol);
+                //Request = HandleS
             }
-        }*/
+            catch (Exception)
+            {
+                Console.WriteLine("No se pudo crear el usuario correctamente.");
+            }
+        }
     }
 }

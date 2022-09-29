@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Sockets;
+using System.Text;
 
 namespace Communication
 {
@@ -12,8 +13,16 @@ namespace Communication
             this._socket = socket;
         }
 
+        public void SendRequest(Request protocol)
+        {
+            this.Send(protocol.Header.GetRequest()); //agarro command y datalength y envio
+            this.Send(Encoding.UTF8.GetBytes(protocol.Body)); //agarro la data y envio
+        }
+
         public void Send(byte[] data)
         {
+            //var header = new Header(command, sentData.Length);
+            //var data = header.GetRequest();
             int offset = 0;
             while (offset < data.Length)
             {
