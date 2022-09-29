@@ -1,24 +1,30 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using AppServidor.Domain;
 using Domain;
 
 namespace Repositories
 {
     public class UserRepository
     {
-        private static IList<User> _userRepository;
-        public static void AddUser(User user)
+        private IList<User> _userRepository;
+        public UserRepository()
+        {
+            _userRepository = new List<User>();
+        }
+       
+        public void AddUser(User user)
         {
             _userRepository.Add(user);
         }
 
-        public static User GetUser(string userName)
+        public User GetUser(string userName)
         {
             User returnUser = null;
             foreach (var user in _userRepository)
             {
-                if (user.UserName == userName)
+                if (user.Username == userName)
                 {
                     returnUser = user;
                 }
