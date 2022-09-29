@@ -1,11 +1,14 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using Domain;
 
 namespace Repositories
 {
-    public class WorkProfileRepository
+    public class WorkProfileRepository : IQueryable
     {
         private IList<WorkProfile> _workProfiles;
 
@@ -21,41 +24,53 @@ namespace Repositories
 
         public WorkProfile GetProfile(string userName)
         {
-            WorkProfile profile = null;
-            foreach (var workProfile in _workProfiles)
-            {
-                if (workProfile.UserName == userName)
-                {
-                    profile = workProfile;
-                }
-            }
-            return profile;
+            return _workProfiles.FirstOrDefault(x => x.UserName == userName);
+            //WorkProfile profile = null;
+            //foreach (var workProfile in _workProfiles)
+            //{
+            //    if (workProfile.UserName == userName)
+            //    {
+            //        profile = workProfile;
+            //    }
+            //}
+            //return profile;
         }
 
         public IList<WorkProfile> GetProfilesBySkills(string skill)
         {
-            IList<WorkProfile> workProfiles = new List<WorkProfile>();
-            foreach (var profile in _workProfiles)
-            {
-                if (profile.Skills.Contains(skill))
-                {
-                    workProfiles.Add(profile);
-                }
-            }
+            return _workProfiles.Where(x => x.Skills.Contains(skill)).ToList();
+            //IList<WorkProfile> workProfiles = new List<WorkProfile>();
+            //foreach (var profile in _workProfiles)
+            //{
+            //    if (profile.Skills.Contains(skill))
+            //    {
+            //        workProfiles.Add(profile);
+            //    }
+            //}
 
-            return workProfiles;
+            //return workProfiles;
         }
         public IList<WorkProfile> GetProfilesByKeyWord(string keyWord)
         {
-            IList<WorkProfile> workProfiles = new List<WorkProfile>();
-            foreach (var profile in _workProfiles)
-            {
-                if (profile.Description.Contains(keyWord))
-                {
-                    workProfiles.Add(profile);
-                }
-            }
-            return workProfiles;
+            return _workProfiles.Where(x => x.Description.Contains(keyWord)).ToList();
+            //IList<WorkProfile> workProfiles = new List<WorkProfile>();
+            //foreach (var profile in _workProfiles)
+            //{
+            //    if (profile.Description.Contains(keyWord))
+            //    {
+            //        workProfiles.Add(profile);
+            //    }
+            //}
+            //return workProfiles;
         }
+
+        public IEnumerator GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Type ElementType { get; }
+        public Expression Expression { get; }
+        public IQueryProvider Provider { get; }
     }
 }

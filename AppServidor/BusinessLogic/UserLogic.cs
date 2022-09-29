@@ -78,5 +78,10 @@ namespace BusinessLogic
             }
             return messages;
         }
+
+        public void SendMessage(string sender,string receptor, string message)
+        {
+            
+        }
     }
 }
