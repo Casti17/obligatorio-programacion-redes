@@ -1,14 +1,6 @@
-﻿using BusinessLogic;
-using Communication;
-using Repositories;
-using System;
-using System.Net;
-using System.Net.Sockets;
-using System.Threading;
-
-namespace AppServidor
+﻿namespace AppServidor
 {
-    public class ServerDisplay
+    /*public class ServerDisplay
     {
         private static readonly SettingsManager settingsMng = new SettingsManager();
         private static readonly Socket socketServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -62,5 +54,5 @@ namespace AppServidor
             {
             }
         }
-    }
+    }*/
 }

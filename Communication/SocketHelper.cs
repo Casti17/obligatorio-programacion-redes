@@ -1,16 +1,63 @@
-﻿using System;
+﻿/*using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 
 namespace Communication
 {
     public class SocketHelper
     {
         private readonly Socket _socket;
+        public bool Disconnect { get; set; }
 
-        public SocketHelper(Socket socket)
+        //public UserLogic userLogic { get; set; }
+        public List<Socket> Clients { get; set; }
+
+        public SocketHelper()
         {
-            this._socket = socket;
+            this.Clients = new List<Socket>();
+        }
+
+        public void ListenClients(Socket socketServer)
+        {
+            while (!this.Disconnect)
+            {
+                try
+                {
+                    var clientConnected = socketServer.Accept();
+                    this.Clients.Add(clientConnected);
+                    Console.WriteLine("Accepted new connection!");
+                    var client = new Thread(() => this.ClientHandle(clientConnected));
+                    client.Start();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error when connecting, ", e.Message);
+                    this.Disconnect = true;
+                }
+            }
+            Console.WriteLine("Disconnecting. . .");
+        }
+
+        private void ClientHandle(Socket clientSocket)
+        {
+            //bool endConnection = false;
+            //while (!this.Disconnect && !endConnection)
+            //{
+            //    var headerLength = ProtocolConstants.CommandLength + ProtocolConstants.DataLength;
+            //    var buffer = new byte[headerLength];
+            //    try
+            //    {
+            //        //ReceiveData(clientSocket, headerLength, buffer);
+            //        var header = new Header(buffer);
+            //        switch (header.ICommand)
+            //        {
+            //            case Commands.CreateUser:
+            //                this.userLogic
+            //        }
+            //    }
+            //}
         }
 
         public void SendRequest(Request protocol)
@@ -62,4 +109,4 @@ namespace Communication
             return data;
         }
     }
-}
+}*/

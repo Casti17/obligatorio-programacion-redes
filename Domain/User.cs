@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
-using Domain;
 
-namespace AppServidor.Domain
+namespace Domain
 {
     public class User
     {

@@ -1,35 +1,40 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text.RegularExpressions;
-using AppServidor.BusinessLogic;
-using AppServidor.Domain;
+﻿using DataAccess;
 using Domain;
-using Repositories;
+using Logic.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
-namespace BusinessLogic
+namespace Logic
 {
-    public class UserLogic
+    public class MainHelper : IMainHelper
     {
-        private static UserRepository _userRepository;
-        private int _maxLength = 20;
-        private Regex _formalRegex = new Regex("[A - Za - z]{3,20}");
-        private Regex _regularRegex = new Regex(@"([A - Za - z\w\-\.]{3,20} *)$");
-        public UserLogic(UserRepository userRepo)
+        private readonly int _maxLength = 20;
+        private readonly Regex _formalRegex = new Regex("[A - Za - z]{3,20}");
+        private readonly Regex _regularRegex = new Regex(@"([A - Za - z\w\-\.]{3,20} *)$");
+
+        public MainHelper()
         {
-            _userRepository = userRepo;
+            Repository.GetRepository();
         }
+
+        public void CreateUser(string userAndGameName)
+        {
+            throw new System.NotImplementedException();
+        }
+
         public void CreateUser(string name, string surname, string username)
         {
-            if (DataValidator.IsValid(name,_formalRegex) && DataValidator.IsValid(surname,_formalRegex) && DataValidator.IsValid(username,_regularRegex))
+            if (DataValidator.IsValid(name, this._formalRegex) && DataValidator.IsValid(surname, this._formalRegex) && DataValidator.IsValid(username, this._regularRegex))
             {
                 try
                 {
-                    User userExists = _userRepository.GetUser(username);
+                    var users = (List<User>)Repository.GetUsers();
+                    User userExists = Repository.RepositoryInstance.GetUser(username);
                     if (userExists == null)
                     {
                         User newUser = new User(name, surname, username);
-                        _userRepository.AddUser(newUser);
+                        Repository.Users.Add(newUser);
                     }
                 }
                 catch
@@ -43,10 +48,9 @@ namespace BusinessLogic
             }
         }
 
-
         public IList<Message> GetUnreadMessages(string username)
         {
-            User user = _userRepository.GetUser(username);
+            User user = Repository.RepositoryInstance.GetUser(username);
             IList<Message> messages = new List<Message>();
             foreach (var message in user.MessageBox)
             {
@@ -60,7 +64,7 @@ namespace BusinessLogic
 
         public IList<string> GetMessageHistory(string username)
         {
-            User user = _userRepository.GetUser(username);
+            User user = Repository.RepositoryInstance.GetUser(username);
             string messageHead;
             IList<string> messages = new List<string>();
             foreach (var message in user.MessageBox)
@@ -79,9 +83,8 @@ namespace BusinessLogic
             return messages;
         }
 
-        public void SendMessage(string sender,string receptor, string message)
+        public void SendMessage(string sender, string receptor, string message)
         {
-            
         }
     }
 }

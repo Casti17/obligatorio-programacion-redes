@@ -5,25 +5,63 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Repositories
+namespace DataAccess
 {
-    public class WorkProfileRepository : IQueryable
+    public class Repository
     {
-        private readonly IList<WorkProfile> _workProfiles;
+        public static List<User> Users { get; set; }
+        public static List<WorkProfile> WorkProfiles { get; set; }
+        public static Repository RepositoryInstance { get; set; }
 
-        public WorkProfileRepository()
+        public Repository()
         {
-            this._workProfiles = new List<WorkProfile>();
+            Users = new List<User>();
+            WorkProfiles = new List<WorkProfile>();
+        }
+
+        public static IList<User> GetUsers()
+        {
+            return (Users ??= new List<User>());
+        }
+
+        public static IList<WorkProfile> GetWorkProfiles()
+        {
+            return (WorkProfiles ??= new List<WorkProfile>());
+        }
+
+        public static Repository GetRepository()
+        {
+            return RepositoryInstance ??= new Repository();
+        }
+
+        public void AddUser(User user)
+        {
+            Users.Add(user);
+        }
+
+        public User GetUser(string userName)
+        {
+            return Users.Where(u => u.Username.Equals(userName)) as User;
+        }
+
+        public bool Exists(string userName)
+        {
+            return Users.Any(x => x.Username.Equals(userName));
+        }
+
+        public IEnumerator GetEnumerator()
+        {
+            throw new NotImplementedException();
         }
 
         public void AddProfile(WorkProfile workProfile)
         {
-            this._workProfiles.Add(workProfile);
+            WorkProfiles.Add(workProfile);
         }
 
         public WorkProfile GetProfile(string userName)
         {
-            return this._workProfiles.FirstOrDefault(x => x.UserName == userName);
+            return WorkProfiles.FirstOrDefault(x => x.UserName == userName);
             //WorkProfile profile = null;
             //foreach (var workProfile in _workProfiles)
             //{
@@ -37,7 +75,7 @@ namespace Repositories
 
         public IList<WorkProfile> GetProfilesBySkills(string skill)
         {
-            return this._workProfiles.Where(x => x.Skills.Contains(skill)).ToList();
+            return WorkProfiles.Where(x => x.Skills.Contains(skill)).ToList();
             //IList<WorkProfile> workProfiles = new List<WorkProfile>();
             //foreach (var profile in _workProfiles)
             //{
@@ -52,7 +90,7 @@ namespace Repositories
 
         public IList<WorkProfile> GetProfilesByKeyWord(string keyWord)
         {
-            return this._workProfiles.Where(x => x.Description.Contains(keyWord)).ToList();
+            return WorkProfiles.Where(x => x.Description.Contains(keyWord)).ToList();
             //IList<WorkProfile> workProfiles = new List<WorkProfile>();
             //foreach (var profile in _workProfiles)
             //{
@@ -62,11 +100,6 @@ namespace Repositories
             //    }
             //}
             //return workProfiles;
-        }
-
-        public IEnumerator GetEnumerator()
-        {
-            throw new NotImplementedException();
         }
 
         public Type ElementType { get; }

@@ -4,8 +4,8 @@
     {
         public static void Main(string[] args)
         {
-            ServerDisplay serverDisplay = new ServerDisplay();
-            serverDisplay.StartServer();
+            ServerHandler serverHandler = new ServerHandler();
+            serverHandler.Start();
             // Como hacemos para aceptar N clientes.
             // Como hacemos para enviar y recibir mensajes.
 

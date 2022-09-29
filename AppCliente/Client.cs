@@ -1,6 +1,4 @@
-﻿using Communication;
-using System;
-using System.Net;
+﻿using System;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 
@@ -8,12 +6,14 @@ namespace AppCliente
 {
     public class Client
     {
-        private static readonly SettingsManager settingsMngr = new SettingsManager();
-        public static ClientHandler clientHandler = new ClientHandler();
+        //private static readonly SettingsManager settingsMngr = new SettingsManager();
+        //public static ClientHandler clientHandler = new ClientHandler();
 
         private static void Main(string[] args)
         {
-            bool connected = true;
+            var clientHandler = new ClientHandler();
+            clientHandler.Start();
+            /*bool connected = true;
             Console.WriteLine("Iniciando Aplicacion Cliente....!!!");
 
             var socketCliente = new Socket(
@@ -87,7 +87,7 @@ namespace AppCliente
             Console.WriteLine("Cierro el Cliente");
             // Cerrar la conexion.
             socketCliente.Shutdown(SocketShutdown.Both);
-            socketCliente.Close();
+            socketCliente.Close();*/
         }
 
         public static void CaseCreateUser(Socket socketCliente)
@@ -125,7 +125,7 @@ namespace AppCliente
                 correctFormat = Regex.IsMatch(name, @"^[a-zA-Z]+$");
             }
             string user = $"{name}#{lastName}#{userName}";
-            clientHandler.CreateUser(user);
+            //clientHandler.CreateUser(user);
         }
 
         public static void CaseCreateWorkProfile()

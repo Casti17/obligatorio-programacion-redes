@@ -38,9 +38,9 @@ namespace Communication
 
         public byte[] GetRequest()
         {
-            var header = new byte[ProtocolConstants.CommandLength + ProtocolConstants.DataLength]; //New arr byte[1024]
-            Array.Copy(this._command, 0, header, 0, 2);
-            Array.Copy(this._dataLength, 0, header, ProtocolConstants.CommandLength, 4);
+            var header = new byte[ProtocolConstants.CommandLength + ProtocolConstants.DataLength];
+            Array.Copy(this._command, 0, header, 0, 2); // array source, indexSource, array destination, indexDestination length. Obtencion del comando
+            Array.Copy(this._dataLength, 0, header, ProtocolConstants.CommandLength, 4); // obtencion de la data.
             return header;
         }
 
