@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Text.RegularExpressions;
+using AppServidor.BusinessLogic;
 using AppServidor.Domain;
 using Domain;
 using Repositories;
@@ -9,17 +12,37 @@ namespace BusinessLogic
     public class UserLogic
     {
         private static UserRepository _userRepository;
+        private int _maxLength = 20;
+        private Regex _formalRegex = new Regex("[A - Za - z]{3,20}");
+        private Regex _regularRegex = new Regex(@"([A - Za - z\w\-\.]{3,20} *)$");
         public UserLogic(UserRepository userRepo)
         {
             _userRepository = userRepo;
         }
         public void CreateUser(string name, string surname, string username)
         {
-            //validar datos
-
-            User newUser = new User(name, surname, username);
-            _userRepository.AddUser(newUser);
+            if (DataValidator.IsValid(name,_formalRegex) && DataValidator.IsValid(surname,_formalRegex) && DataValidator.IsValid(username,_regularRegex))
+            {
+                try
+                {
+                    User userExists = _userRepository.GetUser(username);
+                    if (userExists == null)
+                    {
+                        User newUser = new User(name, surname, username);
+                        _userRepository.AddUser(newUser);
+                    }
+                }
+                catch
+                {
+                    throw new Exception("El usuario ya existe");
+                }
+            }
+            else
+            {
+                throw new ArgumentException("Los datos Ingresados son erroneos");
+            }
         }
+
 
         public IList<Message> GetUnreadMessages(string username)
         {

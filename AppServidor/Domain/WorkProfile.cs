@@ -7,9 +7,9 @@ namespace Domain
 {
     public class WorkProfile
     {
-        public WorkProfile(string profilePic, string description, List<string> skills)
+        public WorkProfile(string username, string description, List<string> skills)
         {
-            ProfilePic = profilePic;
+            UserName = username;
             Description = description;
             Skills = skills;
         }
