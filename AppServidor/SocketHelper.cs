@@ -1,4 +1,5 @@
 ﻿using Communication;
+using Domain;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
@@ -59,10 +60,6 @@ namespace AppServidor
                     byte[] bufferData = this.Receive(header.IDataLength);
                     var data = Encoding.UTF8.GetString(bufferData);
                     string[] dataArray;
-                    //this.ReceiveData(clientSocket, headerLength, buffer);
-                    //var header = new Header(buffer);
-                    //byte[] buffer = this.socketHelper.Receive(ProtocolConstants.CommandLength + ProtocolConstants.DataLength);
-
                     switch (header.ICommand)
                     {
                         case Commands.CreateUser:
@@ -74,6 +71,50 @@ namespace AppServidor
                         case Commands.CreateWorkProfile:
                             dataArray = data.Split('#');
                             this.MainHelper.CreateWorkProfile(dataArray[0], dataArray[1], dataArray[2], dataArray[3]);
+                            break;
+
+                        case Commands.AssociateImageToProfile:
+                            dataArray = data.Split('#');
+                            this.MainHelper.AssociateImageToProfile(dataArray[0], dataArray[1]);
+                            break;
+
+                        case Commands.SearchExistingProfiles:
+                            dataArray = data.Split('#');
+                            List<WorkProfile> allFoundProfiles = this.MainHelper.SearchFilters(dataArray);
+                            foreach (WorkProfile wrkProfile in allFoundProfiles)
+                            {
+                                Console.WriteLine(wrkProfile.UserName);
+                            }
+                            break;
+
+                        case Commands.SearchProfile:
+                            WorkProfile wp = this.MainHelper.Search(data);
+                            if (wp == null)
+                            {
+                                Console.WriteLine("No profile was found");
+                            }
+                            else
+                            {
+                                Console.WriteLine(wp.ProfilePic);
+                            }
+
+                            break;
+
+                        case Commands.SendMessage:
+                            dataArray = data.Split('#');
+                            this.MainHelper.SendMessage(dataArray[0], dataArray[1], dataArray[2]);
+                            break;
+
+                        case Commands.CheckInbox:
+                            List<Message> messages = this.MainHelper.CheckInbox(data);
+                            foreach (Message m in messages)
+                            {
+                                Console.WriteLine($"{m.Sender} sent the following message: {m.MessageBody}");
+                            }
+                            break;
+
+                        default:
+                            endConnection = true;
                             break;
                     }
                 }

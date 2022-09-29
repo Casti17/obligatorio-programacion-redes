@@ -88,18 +88,53 @@ namespace DataAccess
             //return workProfiles;
         }
 
-        public IList<WorkProfile> GetProfilesByKeyWord(string keyWord)
+        public IList<WorkProfile> GetProfilesByKeyWord(string[] keyWords)
         {
-            return WorkProfiles.Where(x => x.Description.Contains(keyWord)).ToList();
-            //IList<WorkProfile> workProfiles = new List<WorkProfile>();
-            //foreach (var profile in _workProfiles)
-            //{
-            //    if (profile.Description.Contains(keyWord))
-            //    {
-            //        workProfiles.Add(profile);
-            //    }
-            //}
-            //return workProfiles;
+            IList<WorkProfile> workProfiles = new List<WorkProfile>();
+            foreach (var word in keyWords)
+            {
+                workProfiles.Concat(WorkProfiles.Where(x => x.Description.Contains(word)).ToList());
+            }
+            return workProfiles;
+        }
+
+        public IList<Message> GetUnreadMessages(string username)
+        {
+            User user = RepositoryInstance.GetUser(username);
+            IList<Message> messages = new List<Message>();
+            foreach (var message in user.MessageBox)
+            {
+                if (!message.Read)
+                {
+                    messages.Add(message);
+                }
+            }
+            return messages;
+        }
+
+        public IList<string> GetMessageHistory(string username)
+        {
+            User user = Repository.RepositoryInstance.GetUser(username);
+            string messageHead;
+            IList<string> messages = new List<string>();
+            foreach (var message in user.MessageBox)
+            {
+                if (message.Receptor.Equals(username))
+                {
+                    messageHead = $"{username} recieved a message from {message.Sender}";
+                }
+                else
+                {
+                    messageHead = $"{username} sent a message to {message.Receptor}";
+                }
+
+                messages.Add(messageHead);
+            }
+            return messages;
+        }
+
+        public void SendMessage(string sender, string receptor, string message)
+        {
         }
 
         public Type ElementType { get; }

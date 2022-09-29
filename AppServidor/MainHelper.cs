@@ -72,5 +72,43 @@ namespace AppServidor
                 }
             }
         }
+
+        public void AssociateImageToProfile(string username, string path)
+        {
+            try
+            {
+                WorkProfile workProf = Repository.RepositoryInstance.GetProfile(username);
+                if (workProf == null)
+                {
+                    throw new Exception("Profile does not exist");
+                }
+                workProf.ProfilePic = path;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+        }
+
+        public List<WorkProfile> SearchFilters(string[] dataArray)
+        {
+            return (List<WorkProfile>)Repository.RepositoryInstance.GetProfilesByKeyWord(dataArray);
+        }
+
+        public WorkProfile Search(string data)
+        {
+            return Repository.RepositoryInstance.GetProfile(data);
+        }
+
+        public void SendMessage(string sender, string receptor, string message)
+        {
+            Repository.RepositoryInstance.SendMessage(sender, receptor, message);
+        }
+
+        public List<Message> CheckInbox(string username)
+        {
+            List<Message> unreads = (List<Message>)Repository.RepositoryInstance.GetUnreadMessages(username);
+            return unreads;
+        }
     }
 }

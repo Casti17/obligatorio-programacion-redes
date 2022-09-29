@@ -57,6 +57,7 @@ namespace Logic
                 if (!message.Read)
                 {
                     messages.Add(message);
+                    message.Read = true;
                 }
             }
             return messages;
