@@ -62,30 +62,11 @@ namespace DataAccess
         public WorkProfile GetProfile(string userName)
         {
             return WorkProfiles.FirstOrDefault(x => x.UserName == userName);
-            //WorkProfile profile = null;
-            //foreach (var workProfile in _workProfiles)
-            //{
-            //    if (workProfile.UserName == userName)
-            //    {
-            //        profile = workProfile;
-            //    }
-            //}
-            //return profile;
         }
 
         public IList<WorkProfile> GetProfilesBySkills(string skill)
         {
             return WorkProfiles.Where(x => x.Skills.Contains(skill)).ToList();
-            //IList<WorkProfile> workProfiles = new List<WorkProfile>();
-            //foreach (var profile in _workProfiles)
-            //{
-            //    if (profile.Skills.Contains(skill))
-            //    {
-            //        workProfiles.Add(profile);
-            //    }
-            //}
-
-            //return workProfiles;
         }
 
         public IList<WorkProfile> GetProfilesByKeyWord(string[] keyWords)

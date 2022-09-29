@@ -65,7 +65,6 @@ namespace AppServidor
                         case Commands.CreateUser:
                             dataArray = data.Split('#');
                             this.MainHelper.CreateUser(dataArray[0], dataArray[1], dataArray[2]);
-                            Console.WriteLine("Hola");
                             break;
 
                         case Commands.CreateWorkProfile:

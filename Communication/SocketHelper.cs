@@ -1,4 +1,4 @@
-﻿/*using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
@@ -11,7 +11,6 @@ namespace Communication
         private readonly Socket _socket;
         public bool Disconnect { get; set; }
 
-        //public UserLogic userLogic { get; set; }
         public List<Socket> Clients { get; set; }
 
         public SocketHelper()
@@ -42,22 +41,26 @@ namespace Communication
 
         private void ClientHandle(Socket clientSocket)
         {
-            //bool endConnection = false;
-            //while (!this.Disconnect && !endConnection)
-            //{
-            //    var headerLength = ProtocolConstants.CommandLength + ProtocolConstants.DataLength;
-            //    var buffer = new byte[headerLength];
-            //    try
-            //    {
-            //        //ReceiveData(clientSocket, headerLength, buffer);
-            //        var header = new Header(buffer);
-            //        switch (header.ICommand)
-            //        {
-            //            case Commands.CreateUser:
-            //                this.userLogic
-            //        }
-            //    }
-            //}
+            bool endConnection = false;
+            while (!this.Disconnect && !endConnection)
+            {
+                var headerLength = ProtocolConstants.CommandLength + ProtocolConstants.DataLength;
+                var buffer = new byte[headerLength];
+                try
+                {
+                    //ReceiveData(clientSocket, headerLength, buffer);
+                    var header = new Header(buffer);
+                    switch (header.ICommand)
+                    {
+                        /*case Commands.CreateUser:
+                            this.userLogic*/
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+            }
         }
 
         public void SendRequest(Request protocol)
@@ -68,8 +71,6 @@ namespace Communication
 
         public void Send(byte[] data)
         {
-            //var header = new Header(command, sentData.Length);
-            //var data = header.GetRequest();
             int offset = 0;
             while (offset < data.Length)
             {
@@ -109,4 +110,4 @@ namespace Communication
             return data;
         }
     }
-}*/
+}

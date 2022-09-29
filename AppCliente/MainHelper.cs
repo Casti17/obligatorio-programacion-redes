@@ -7,22 +7,11 @@ namespace AppCliente
 {
     public class MainHelper : IMainHelper
     {
-        private readonly SocketHelper socketHelper;
-
-        private string ReadWhileEmpty(string message)
-        {
-            string input = "";
-            while (input.Equals(""))
-            {
-                Console.WriteLine(message);
-                input = Console.ReadLine();
-            }
-
-            return input;
-        }
+        private SocketHelper socketHelper;
 
         public void CreateUser(string userData, Socket socket)
         {
+            this.socketHelper = new SocketHelper(socket);
             try
             {
                 Request req = new Request();
@@ -36,13 +25,34 @@ namespace AppCliente
             }
         }
 
-        private string UserCreation()
+        public void CreateWorkProfile(string workprofile, Socket socketCliente)
         {
-            var username = this.ReadWhileEmpty("Username?");
-            var name = this.ReadWhileEmpty("Name?");
-            var lastName = this.ReadWhileEmpty("Last name?");
+            try
+            {
+                Request req = new Request();
+                req.Body = workprofile;
+                req.Header = new Header(Commands.CreateWorkProfile, ProtocolConstants.DataLength);
+                this.socketHelper.SendRequest(req);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("Cant create work profile");
+            }
+        }
 
-            return $"{username}#{name}#{lastName}";
+        public void UpdateProfilePicture(string update, Socket socket)
+        {
+            try
+            {
+                Request req = new Request();
+                req.Body = update;
+                req.Header = new Header(Commands.AssociateImageToProfile, ProtocolConstants.DataLength);
+                this.socketHelper.SendRequest(req);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("Cant update image");
+            }
         }
     }
 }
