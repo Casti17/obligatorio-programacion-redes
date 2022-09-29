@@ -36,6 +36,10 @@ namespace Communication
             this.SplitHeaderProtocol(buffer);
         }
 
+        public Header()
+        {
+        }
+
         public byte[] GetRequest()
         {
             var header = new byte[ProtocolConstants.CommandLength + ProtocolConstants.DataLength];

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Communication
+﻿namespace Communication
 {
     public static class Commands
     {
@@ -14,5 +10,7 @@ namespace Communication
         public const int SendMessage = 6;
         public const int CheckInbox = 7;
         public const int Disconnect = 8;
+        public const int Ok = 9;
+        public const int Failed = 10;
     }
 }
