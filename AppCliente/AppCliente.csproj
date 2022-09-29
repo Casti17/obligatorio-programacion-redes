@@ -6,7 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Protocol\Protocol.csproj" />
+    <ProjectReference Include="..\AppServidor\AppServidor.csproj" />
+    <ProjectReference Include="..\Communication\Communication.csproj" />
   </ItemGroup>
 
 </Project>
