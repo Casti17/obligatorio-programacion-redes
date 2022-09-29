@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace Domain
 {
@@ -8,10 +6,11 @@ namespace Domain
     {
         public User(string name, string surname, string username)
         {
-            Name = name;
-            Surname = surname;
-            Username = username;
+            this.Name = name;
+            this.Surname = surname;
+            this.Username = username;
         }
+
         public string Name { get; set; }
         public string Surname { get; set; }
         public string Username { get; set; }
