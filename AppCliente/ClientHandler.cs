@@ -11,10 +11,6 @@ namespace AppCliente
     {
         private SettingsManager settingsManager { get; set; }
         private IMainHelper mainHelper { get; set; }
-        //private UserLogic userLogic { get; set; }
-
-        //public Socket clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        // private readonly SettingsManager settingsMngr = new SettingsManager();
 
         public ClientHandler()
         {
