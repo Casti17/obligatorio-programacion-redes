@@ -7,14 +7,19 @@ namespace Repositories
 {
     public class WorkProfileRepository
     {
-        private static IList<WorkProfile> _workProfiles;
+        private IList<WorkProfile> _workProfiles;
 
-        public static void AddProfile(WorkProfile workProfile)
+        public WorkProfileRepository()
+        {
+            _workProfiles = new List<WorkProfile>();
+        }
+
+        public void AddProfile(WorkProfile workProfile)
         {
             _workProfiles.Add(workProfile);
         }
 
-        public static WorkProfile GetProfile(string userName)
+        public WorkProfile GetProfile(string userName)
         {
             WorkProfile profile = null;
             foreach (var workProfile in _workProfiles)
@@ -27,7 +32,7 @@ namespace Repositories
             return profile;
         }
 
-        public static IList<WorkProfile> GetProfilesBySkills(string skill)
+        public IList<WorkProfile> GetProfilesBySkills(string skill)
         {
             IList<WorkProfile> workProfiles = new List<WorkProfile>();
             foreach (var profile in _workProfiles)
@@ -40,7 +45,7 @@ namespace Repositories
 
             return workProfiles;
         }
-        public static IList<WorkProfile> GetProfilesByKeyWord(string keyWord)
+        public IList<WorkProfile> GetProfilesByKeyWord(string keyWord)
         {
             IList<WorkProfile> workProfiles = new List<WorkProfile>();
             foreach (var profile in _workProfiles)
