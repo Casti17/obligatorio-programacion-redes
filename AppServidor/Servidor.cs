@@ -1,11 +1,13 @@
-﻿namespace AppServidor
+﻿using System.Threading.Tasks;
+
+namespace AppServidor
 {
     internal class Servidor
     {
-        public static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
             ServerHandler serverHandler = new ServerHandler();
-            serverHandler.Start();
+            await serverHandler.StartAsync();
         }
     }
 }

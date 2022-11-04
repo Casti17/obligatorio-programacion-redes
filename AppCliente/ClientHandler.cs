@@ -3,7 +3,9 @@ using Communication;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace AppCliente
 {
@@ -18,17 +20,48 @@ namespace AppCliente
             this.mainHelper = new MainHelper();
         }
 
-        public void Start()
+        public async Task StartAsync()
         {
-            var socket = this.StartSocket();
-            var connected = true;
-            Console.WriteLine("Client started");
-            while (connected)
+            Console.WriteLine("Client starting...");
+            var clientIpEndPoint = new IPEndPoint(
+                IPAddress.Parse(this.settingsManager.ReadSettings(ClientConfig.clientIPconfigkey)),
+                int.Parse(this.settingsManager.ReadSettings(ClientConfig.ClientPortConfigKey)));
+            var tcpClient = new TcpClient(clientIpEndPoint);
+            Console.WriteLine("Trying to connect to server");
+
+            await tcpClient.ConnectAsync(
+                IPAddress.Parse(this.settingsManager.ReadSettings(ClientConfig.serverIPconfigkey)),
+                int.Parse(this.settingsManager.ReadSettings(ClientConfig.serverPortconfigkey))).ConfigureAwait(false);
+            var keepConnection = true;
+
+            await using (var networkStream = tcpClient.GetStream())
+            {
+                while (keepConnection)
+                {
+                    var word = string.Empty;
+                    while (string.IsNullOrEmpty(word) || string.IsNullOrWhiteSpace(word))
+                    {
+                        Console.WriteLine("Write a message for the server");
+                        word = Console.ReadLine();
+                    }
+                    byte[] data = Encoding.UTF8.GetBytes(word);
+                    byte[] dataLength = BitConverter.GetBytes(data.Length);
+                    await networkStream.WriteAsync(dataLength, 0, Protocol.FixedDataSize).ConfigureAwait(false);
+                    await networkStream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
+                    if (word.Equals("exit"))
+                    {
+                        keepConnection = false;
+                    }
+                }
+            }
+
+            tcpClient.Close();
+            /*while (connected)
             {
                 this.ShowMenu();
                 var option = Console.ReadLine();
                 connected = this.ExecuteSelectedOption(option, socket, connected);
-            }
+            }*/
         }
 
         private Socket StartSocket()
