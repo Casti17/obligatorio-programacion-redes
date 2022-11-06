@@ -9,6 +9,10 @@
             this.MessageBody = msg;
         }
 
+        public Message()
+        {
+        }
+
         public string MessageBody { get; set; }
         public string Sender { get; set; }
         public string Receptor { get; set; }

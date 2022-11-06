@@ -1,146 +1,270 @@
 ﻿using Communication;
+using Domain;
+using Domain.DTO;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace AppServidor
 {
     public class ServerHandler
     {
-        private readonly Socket socketClient;
-
+        private static bool _exit = false;
+        private static readonly List<TcpClient> _clients = new List<TcpClient>();
+        public LkDin lkdin;
+        private FileCommsHandler communication;
+        private TcpClient _clientTcp;
         private static readonly SettingsManager settingsManager = new SettingsManager();
-
-        private static SocketHelper socketHelper { get; set; }
-
-        public SocketHelper GetSocketHelper()
-        {
-            return socketHelper = new SocketHelper(this.socketClient);
-        }
 
         public async Task StartAsync()
         {
-            /*var socketServer = this.StartSocketServer();
-
-            Console.WriteLine("Welcome to LkDin Server");
-            Console.WriteLine("Options");
-            Console.WriteLine("exit");
-            while (!this.GetSocketHelper().Disconnect)
-            {
-                var userInput = Console.ReadLine();
-                switch (userInput)
-                {
-                    case "exit":
-                        this.ExitServer(socketServer);
-                        break;
-
-                    default:
-                        Console.WriteLine("Incorrect option");
-                        break;
-                }
-            }*/
             Console.WriteLine("Server is starting...");
             var ipEndPoint = new IPEndPoint(
                 IPAddress.Parse(settingsManager.ReadSettings(ServerConfig.serverIPconfigkey)),
                 int.Parse(settingsManager.ReadSettings(ServerConfig.serverPortconfigkey)));
             var tcpListener = new TcpListener(ipEndPoint);
-
             tcpListener.Start(100);
+            Task.Run(() => this.ListenForConnectionsAsync(tcpListener));
             Console.WriteLine("Server started listening connections on {0}-{1}", settingsManager.ReadSettings(ServerConfig.serverIPconfigkey), settingsManager.ReadSettings(ServerConfig.serverPortconfigkey));
 
-            Console.WriteLine("Server will start displaying messages from the clients");
-
-            while (true)
+            Console.WriteLine("Bienvenido al Sistema Server");
+            Console.WriteLine("Opciones validas: ");
+            Console.WriteLine("exit -> abandonar el programa");
+            Console.WriteLine("Ingrese su opcion: ");
+            while (!_exit)
             {
-                var tcpClientSocket = await tcpListener.AcceptTcpClientAsync().ConfigureAwait(false);
-                var task = Task.Run(async () => await HandleClient(tcpClientSocket).ConfigureAwait(false)); // Pedir un "hilo" del CLR prestado
+                var userInput = Console.ReadLine();
+                switch (userInput)
+                {
+                    case "exit":
+                        _exit = true;
+                        tcpListener.Stop();
+                        foreach (var client in _clients)
+                        {
+                            client.Close();
+                        }
+                        break;
+
+                    default:
+                        Console.WriteLine("Opcion incorrecta ingresada");
+                        break;
+                }
             }
         }
 
-        private static async Task HandleClient(TcpClient tcpClientSocket)
+        private async Task ListenForConnectionsAsync(TcpListener listenerTcp)
         {
-            var isClientConnected = true;
-            try
+            while (!_exit)
             {
-                using (var networkStream = tcpClientSocket.GetStream())
+                try
                 {
-                    while (isClientConnected)
-                    {
-                        var dataLength = new byte[Protocol.FixedDataSize];
-                        int totalReceived = 0;
-                        while (totalReceived < Protocol.FixedDataSize)
-                        {
-                            var received = await networkStream.ReadAsync(dataLength, totalReceived, Protocol.FixedDataSize - totalReceived).ConfigureAwait(false);
-                            if (received == 0)
-                            {
-                                throw new SocketException();
-                            }
-                            totalReceived += received;
-                        }
-                        var length = BitConverter.ToInt32(dataLength, 0);
-                        var data = new byte[length];
-                        totalReceived = 0;
-                        while (totalReceived < length)
-                        {
-                            int received = await networkStream.ReadAsync(data, totalReceived, length - totalReceived).ConfigureAwait(false);
-                            if (received == 0)
-                            {
-                                throw new SocketException();
-                            }
-                            totalReceived += received;
-                        }
-                        var word = Encoding.UTF8.GetString(data);
-                        if (word.Equals("exit"))
-                        {
-                            isClientConnected = false;
-                            Console.WriteLine("Client is leaving");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Client says: " + word);
-                        }
-                    }
+                    var clientConnected = await listenerTcp.AcceptTcpClientAsync();
+                    _clients.Add(clientConnected);
+                    Console.WriteLine("Accepted new connection...");
+                    var taskClient = new Task(async () => await this.HandleClientAsync(clientConnected));
+                    taskClient.Start();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    _exit = true;
                 }
             }
-            catch (SocketException e)
+            Console.WriteLine("Exiting....");
+        }
+
+        private async Task HandleClientAsync(TcpClient client)
+        {
+            this._clientTcp = client;
+            this.communication = new FileCommsHandler(this._clientTcp);
+            this.lkdin = LkDin.GetInstance();
+
+            while (!_exit)
             {
-                Console.WriteLine($"The client connection was interrupted - Exception {e.Message}");
+                var headerLength = ProtocolConstants.CommandLength + ProtocolConstants.DataLength;
+                var buffer = new byte[headerLength];
+                try
+                {
+                    await this.communication.ReceiveDataAsync(headerLength, buffer);
+                    var header = new Header();
+                    header.SplitHeaderProtocol(buffer);
+
+                    switch (header.ICommand)
+                    {
+                        case Commands.CreateUser:
+
+                            await this.CreateUser(header);
+
+                            break;
+
+                        case Commands.CreateWorkProfile:
+                            await this.CreateWorkProfile(header);
+
+                            break;
+
+                        case Commands.AssociateImageToProfile:
+
+                            break;
+
+                        case Commands.SearchProfile:
+                            await this.SearchProfileAsync(header);
+                            break;
+
+                        case Commands.SendMessage:
+                            await this.SendMessageAsync(header);
+                            break;
+
+                        case Commands.CheckInbox:
+                            await this.CheckInbox(header);
+                            break;
+
+                        default:
+                            _exit = true;
+                            break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"El Cliente cierra la conexion -> Message {e.Message}..");
+                    return;
+                }
+            }
+        }
+
+        private async Task CheckInbox(Header header)
+        {
+            var message = "";
+            var bufferInfo = new byte[header.IDataLength];
+
+            await this.communication.ReceiveDataAsync(header.IDataLength, bufferInfo);
+            ProfileSearchInfo receivedProfile = new ProfileSearchInfo();
+            receivedProfile.Decode(bufferInfo);
+            User user = this.lkdin.Users.Find(u => u.Username.Equals(receivedProfile.Username));
+            if (user != null)
+            {
+                List<Message> messagesToSend = user.MessageBox;
+                if (messagesToSend.Count == 0)
+                {
+                    message = user.Username + " No tiene mensajes para mostrar";
+                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
+                }
+                else
+                {
+                    message = this.lkdin.SendStringListOfMessages(messagesToSend, user);
+                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
+                }
+            }
+            else
+            {
+                message = "No existe ese usuario.";
+                await this.communication.SendDataAsync(message, Commands.ServerResponse);
+            }
+        }
+
+        private async Task SendMessageAsync(Header header)
+        {
+            try
+            {
+                var message = "";
+                var bufferInfo = new byte[header.IDataLength];
+                await this.communication.ReceiveDataAsync(header.IDataLength, bufferInfo);
+                SendMessageInfo receivedMessage = new SendMessageInfo();
+                receivedMessage.Decode(bufferInfo);
+                Message newMessage = receivedMessage.ToEntity();
+                User receiver = this.lkdin.Users.Find(u => u.Username.Equals(receivedMessage.Receiver));
+                if (receiver != null)
+                {
+                    receiver.MessageBox.Add(newMessage);
+                    message = $"El mensaje fue enviado al usuario {receiver.Username} correctamente.";
+                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
+                }
+                else
+                {
+                    message = "No existe dicho usuario receptor.";
+                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+        }
+
+        private async Task SearchProfileAsync(Header header)
+        {
+            try
+            {
+                var message = "";
+                var bufferInfo = new byte[header.IDataLength];
+                await this.communication.ReceiveDataAsync(header.IDataLength, bufferInfo);
+                ProfileSearchInfo receivedProfile = new ProfileSearchInfo();
+                receivedProfile.Decode(bufferInfo);
+                WorkProfile found = this.lkdin.WorkProfiles.Find(prof => prof.UserName.Equals(receivedProfile.Username));
+                Console.WriteLine(receivedProfile.Username);
+                if (found != null)
+                {
+                    message = "Se encontro el perfil, descargando imagen...";
+                    FileStreamHandler fh = new FileStreamHandler();
+
+                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
+                    await this.communication.SendFileAsync(found.ProfilePic, fh);
+                }
+                else
+                {
+                    message = "Ese perfil no existe.";
+                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+        }
+
+        private async Task CreateWorkProfile(Header header)
+        {
+            try
+            {
+                var message = "";
+                var bufferData = new byte[header.IDataLength];
+                await this.communication.ReceiveDataAsync(header.IDataLength, bufferData);
+                ProfileInfo receivedProfile = new ProfileInfo();
+                receivedProfile.Decode(bufferData);
+                WorkProfile newProfile = receivedProfile.ToEntity();
+                this.lkdin.WorkProfiles.Add(newProfile);
+                FileStreamHandler fh = new FileStreamHandler();
+                await this.communication.ReceiveFileAsync(fh);
+                WorkProfile x = this.lkdin.WorkProfiles.Find(n => n.UserName.Equals(newProfile.UserName));
+                message = $"El perfil de  {x.UserName} se agrego correctamente.";
+                await this.communication.SendDataAsync(message, Commands.ServerResponse);
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+        }
+
+        private async Task CreateUser(Header header)
+        {
+            try
+            {
+                var bufferData = new byte[header.IDataLength];
+                await this.communication.ReceiveDataAsync(header.IDataLength, bufferData);
+                UserInfo receivedInfo = new UserInfo();
+                receivedInfo.Decode(bufferData);
+                User newUser = receivedInfo.ToEntity();
+
+                this.lkdin.Users.Add(newUser);
+                User x = this.lkdin.Users.Find(n => n.Username.Equals(newUser.Username));
+                var message = $"El usuario {x.Username} se agrego correctamente.";
+                await this.communication.SendDataAsync(message, Commands.ServerResponse);
+            }
+            catch (Exception e)
+            {
+                throw e;
             }
         }
     }
-
-    /*
-    private Socket StartSocketServer()
-        {
-            var socketServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            string ipServer = settingsManager.ReadSettings(ServerConfig.serverIPconfigkey);
-            int ipPort = int.Parse(settingsManager.ReadSettings(ServerConfig.serverPortconfigkey));
-
-            var localEndpoint = new IPEndPoint(IPAddress.Parse(ipServer), ipPort);
-            socketServer.Bind(localEndpoint);
-            socketServer.Listen(100);
-
-            //Lanzar un thread para manejar las conexiones
-            var threadServer = new Thread(() => this.GetSocketHelper().ListenClients(socketServer));
-            threadServer.Start();
-            return socketServer;
-        }
-
-        private void ExitServer(Socket socketServer)
-        {
-            this.GetSocketHelper().Disconnect = true;
-            socketServer.Close(0);
-            foreach (var client in this.GetSocketHelper().Clients)
-            {
-                client.Shutdown(SocketShutdown.Both);
-                client.Close();
-            }
-
-            var fakeSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            var configServerIpAddress = settingsManager.ReadSettings("ServerIpAddress");
-            fakeSocket.Connect(configServerIpAddress, 20000);
-        }
-    }*/
 }

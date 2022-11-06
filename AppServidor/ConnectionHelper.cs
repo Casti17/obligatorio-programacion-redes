@@ -1,42 +1,37 @@
 ﻿using Communication;
-using Domain;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
+using System.Threading.Tasks;
 
 namespace AppServidor
 {
-    public class SocketHelper
+    public class ConnectionHelper
     {
-        private readonly Socket _socket;
         public bool Disconnect { get; set; }
         private MainHelper MainHelper { get; set; }
-        public List<Socket> Clients { get; set; }
+        public List<TcpClient> Clients { get; set; }
 
-        public SocketHelper()
+        public ConnectionHelper()
         {
-            this.Clients = new List<Socket>();
+            this.Clients = new List<TcpClient>();
             this.MainHelper = new MainHelper();
+
+            this.Disconnect = false;
         }
 
-        public SocketHelper(Socket socket)
-        {
-            this._socket = socket;
-        }
-
-        public void ListenClients(Socket socketServer)
+        public async Task ListenClients(TcpListener tcpListener)
         {
             while (!this.Disconnect)
             {
                 try
                 {
-                    var clientConnected = socketServer.Accept();
-                    this.Clients.Add(clientConnected);
-                    Console.WriteLine("Accepted new connection!");
-                    var client = new Thread(() => this.ClientHandle(clientConnected));
-                    client.Start();
+                    var tcpClientSocket = await tcpListener.AcceptTcpClientAsync().ConfigureAwait(false);
+                    this.Clients.Add(tcpClientSocket);
+                    Console.WriteLine("Accepted new connection...");
+                    Task.Run(async () => await this.ClientHandleAsync(tcpClientSocket).ConfigureAwait(false));
+                    //client.Start();
                 }
                 catch (Exception e)
                 {
@@ -47,12 +42,12 @@ namespace AppServidor
             Console.WriteLine("Disconnecting. . .");
         }
 
-        private void ClientHandle(Socket clientSocket)
+        private async Task ClientHandleAsync(TcpClient clientSocket)
         {
             bool endConnection = false;
             while (!this.Disconnect && !endConnection)
             {
-                var headerLength = ProtocolConstants.CommandLength + ProtocolConstants.DataLength;
+                /*var headerLength = ProtocolConstants.CommandLength + ProtocolConstants.DataLength;
                 try
                 {
                     byte[] buffer = this.Receive(ProtocolConstants.CommandLength + ProtocolConstants.DataLength);
@@ -121,16 +116,27 @@ namespace AppServidor
                 {
                     Console.WriteLine("error", e.Message);
                 }
+            }*/
             }
         }
 
-        public void SendRequest(Request protocol)
+        /*public void SendRequest(Request protocol)
         {
             this.Send(protocol.Header.GetRequest()); //agarro command y datalength y envio
             this.Send(Encoding.UTF8.GetBytes(protocol.Body)); //agarro la data y envio
+        }*/
+
+        public async void SendData(string message, NetworkStream networkStream, int command)
+        {
+            var header = new Header(command, message.Length);
+            var data = header.GetRequest();
+            await networkStream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
+
+            var bytesMessage = Encoding.UTF8.GetBytes(message);
+            await networkStream.WriteAsync(bytesMessage, 0, bytesMessage.Length).ConfigureAwait(false);
         }
 
-        public void Send(byte[] data)
+        /*public void Send(byte[] data)
         {
             int offset = 0;
             while (offset < data.Length)
@@ -146,23 +152,21 @@ namespace AppServidor
                 }
 
                 offset += sent;
-            }
-        }
+            }*/
 
-        public void ReceiveData(Socket clientSocket, int Length, byte[] buffer)
+        public async Task ReceiveData(NetworkStream networkStream, int Length, byte[] buffer)
         {
             var offset = 0;
             while (offset < Length)
             {
                 try
                 {
-                    var localRecv = clientSocket.Receive(buffer, offset, Length - offset, SocketFlags.None);
+                    var localRecv = await networkStream.ReadAsync(buffer, offset, Length - offset);
                     if (localRecv == 0) // Si recieve retorna 0 -> la conexion se cerro desde el endpoint remoto
                     {
                         if (!this.Disconnect)
                         {
-                            clientSocket.Shutdown(SocketShutdown.Both);
-                            clientSocket.Close();
+                            networkStream.Close();
                         }
                         else
                         {
@@ -175,12 +179,19 @@ namespace AppServidor
                 catch (SocketException se)
                 {
                     Console.WriteLine(se.Message);
-                    return;
+                    throw new Exception("error");
                 }
             }
         }
 
-        public byte[] Receive(int length)
+        public async Task<string> ReceiveTextData(Header header, NetworkStream networkStream)
+        {
+            var bufferData = new byte[header.IDataLength];
+            await this.ReceiveData(networkStream, header.IDataLength, bufferData);
+            return Encoding.UTF8.GetString(bufferData);
+        }
+
+        /*public byte[] Receive(int length)
         {
             int offset = 0;
             var data = new byte[length];
@@ -200,6 +211,6 @@ namespace AppServidor
             }
 
             return data;
-        }
+        }*/
     }
 }

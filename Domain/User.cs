@@ -11,6 +11,10 @@ namespace Domain
             this.Username = username;
         }
 
+        public User()
+        {
+        }
+
         public string Name { get; set; }
         public string Surname { get; set; }
         public string Username { get; set; }
