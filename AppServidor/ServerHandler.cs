@@ -3,9 +3,13 @@ using Domain;
 using Domain.DTO;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Schema;
+using RabbitMQ.Client;
 
 namespace AppServidor
 {
@@ -26,35 +30,46 @@ namespace AppServidor
                 int.Parse(settingsManager.ReadSettings(ServerConfig.serverPortconfigkey)));
             var tcpListener = new TcpListener(ipEndPoint);
             tcpListener.Start(100);
-            Task.Run(() => this.ListenForConnectionsAsync(tcpListener));
-            Console.WriteLine("Server started listening connections on {0}-{1}", settingsManager.ReadSettings(ServerConfig.serverIPconfigkey), settingsManager.ReadSettings(ServerConfig.serverPortconfigkey));
-
-            Console.WriteLine("Bienvenido al Sistema Server");
-            Console.WriteLine("Opciones validas: ");
-            Console.WriteLine("exit -> abandonar el programa");
-            Console.WriteLine("Ingrese su opcion: ");
-            while (!_exit)
+            var factory = new ConnectionFactory(){HostName = "localhost" };
+            using (var connection = factory.CreateConnection())
+            using (var channel = connection.CreateModel())
             {
-                var userInput = Console.ReadLine();
-                switch (userInput)
+                channel.QueueDeclare(queue: "weather",
+                    durable: false,
+                    exclusive: false,
+                    autoDelete: false,
+                    arguments: null);
+                Task.Run(() => this.ListenForConnectionsAsync(tcpListener, channel));
+                Console.WriteLine("Server started listening connections on {0}-{1}", settingsManager.ReadSettings(ServerConfig.serverIPconfigkey), settingsManager.ReadSettings(ServerConfig.serverPortconfigkey));
+                Console.WriteLine("Bienvenido al Sistema Server");
+                Console.WriteLine("Opciones validas: ");
+                Console.WriteLine("exit -> abandonar el programa");
+                Console.WriteLine("Ingrese su opcion: ");
+                while (!_exit)
                 {
-                    case "exit":
-                        _exit = true;
-                        tcpListener.Stop();
-                        foreach (var client in _clients)
-                        {
-                            client.Close();
-                        }
-                        break;
+                    var userInput = Console.ReadLine();
+                    switch (userInput)
+                    {
+                        case "exit":
+                            _exit = true;
+                            tcpListener.Stop();
+                            foreach (var client in _clients)
+                            {
+                                client.Close();
+                            }
+                            break;
 
-                    default:
-                        Console.WriteLine("Opcion incorrecta ingresada");
-                        break;
+                        default:
+                            Console.WriteLine("Opcion incorrecta ingresada");
+                            break;
+                    }
                 }
             }
+
+
         }
 
-        private async Task ListenForConnectionsAsync(TcpListener listenerTcp)
+        private async Task ListenForConnectionsAsync(TcpListener listenerTcp, IModel channel)
         {
             while (!_exit)
             {
@@ -63,7 +78,7 @@ namespace AppServidor
                     var clientConnected = await listenerTcp.AcceptTcpClientAsync();
                     _clients.Add(clientConnected);
                     Console.WriteLine("Accepted new connection...");
-                    var taskClient = new Task(async () => await this.HandleClientAsync(clientConnected));
+                    var taskClient = new Task(async () => await this.HandleClientAsync(clientConnected, channel));
                     taskClient.Start();
                 }
                 catch (Exception e)
@@ -75,60 +90,61 @@ namespace AppServidor
             Console.WriteLine("Exiting....");
         }
 
-        private async Task HandleClientAsync(TcpClient client)
+        private async Task HandleClientAsync(TcpClient client, IModel channel)
         {
             this._clientTcp = client;
             this.communication = new FileCommsHandler(this._clientTcp);
             this.lkdin = LkDin.GetInstance();
-
-            while (!_exit)
             {
-                var headerLength = ProtocolConstants.CommandLength + ProtocolConstants.DataLength;
-                var buffer = new byte[headerLength];
-                try
+                while (!_exit)
                 {
-                    await this.communication.ReceiveDataAsync(headerLength, buffer);
-                    var header = new Header();
-                    header.SplitHeaderProtocol(buffer);
-
-                    switch (header.ICommand)
+                    var headerLength = ProtocolConstants.CommandLength + ProtocolConstants.DataLength;
+                    var buffer = new byte[headerLength];
+                    try
                     {
-                        case Commands.CreateUser:
+                        await this.communication.ReceiveDataAsync(headerLength, buffer);
+                        var header = new Header();
+                        header.SplitHeaderProtocol(buffer);
 
-                            await this.CreateUser(header);
+                        switch (header.ICommand)
+                        {
+                            case Commands.CreateUser:
 
-                            break;
+                                await this.CreateUser(header, channel);
 
-                        case Commands.CreateWorkProfile:
-                            await this.CreateWorkProfile(header);
+                                break;
 
-                            break;
+                            case Commands.CreateWorkProfile:
+                                await this.CreateWorkProfile(header);
 
-                        case Commands.AssociateImageToProfile:
+                                break;
 
-                            break;
+                            case Commands.AssociateImageToProfile:
 
-                        case Commands.SearchProfile:
-                            await this.SearchProfileAsync(header);
-                            break;
+                                break;
 
-                        case Commands.SendMessage:
-                            await this.SendMessageAsync(header);
-                            break;
+                            case Commands.SearchProfile:
+                                await this.SearchProfileAsync(header);
+                                break;
 
-                        case Commands.CheckInbox:
-                            await this.CheckInbox(header);
-                            break;
+                            case Commands.SendMessage:
+                                await this.SendMessageAsync(header);
+                                break;
 
-                        default:
-                            _exit = true;
-                            break;
+                            case Commands.CheckInbox:
+                                await this.CheckInbox(header);
+                                break;
+
+                            default:
+                                _exit = true;
+                                break;
+                        }
                     }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"El Cliente cierra la conexion -> Message {e.Message}..");
-                    return;
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"El Cliente cierra la conexion -> Message {e.Message}..");
+                        return;
+                    }
                 }
             }
         }
@@ -191,6 +207,15 @@ namespace AppServidor
                 Console.WriteLine(e.Message);
             }
         }
+        private static string Message(IModel channel, string message)
+        {
+            var body = Encoding.UTF8.GetBytes(message);
+            channel.BasicPublish(exchange: "",
+                routingKey: "weather",
+                basicProperties: null,
+                body: body);
+            return message;
+        }
 
         private async Task SearchProfileAsync(Header header)
         {
@@ -246,7 +271,7 @@ namespace AppServidor
             }
         }
 
-        private async Task CreateUser(Header header)
+        private async Task CreateUser(Header header, IModel channel)
         {
             try
             {
@@ -255,11 +280,19 @@ namespace AppServidor
                 UserInfo receivedInfo = new UserInfo();
                 receivedInfo.Decode(bufferData);
                 User newUser = receivedInfo.ToEntity();
-
-                this.lkdin.Users.Add(newUser);
-                User x = this.lkdin.Users.Find(n => n.Username.Equals(newUser.Username));
-                var message = $"El usuario {x.Username} se agrego correctamente.";
-                await this.communication.SendDataAsync(message, Commands.ServerResponse);
+                if (this.lkdin.Users.Any(n => n.Username.Equals(newUser.Username)))
+                {
+                    throw new Exception();
+                }
+                else
+                {
+                    this.lkdin.Users.Add(newUser);
+                    User x = this.lkdin.Users.Find(n => n.Username.Equals(newUser.Username));
+                    var message = $"El usuario {x.Username} se agrego correctamente.";
+                    Message(channel, message + " [creation]");
+                    Console.WriteLine(message);
+                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
+                }
             }
             catch (Exception e)
             {
