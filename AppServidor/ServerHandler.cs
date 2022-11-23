@@ -115,7 +115,7 @@ namespace AppServidor
                                 break;
 
                             case Commands.CreateWorkProfile:
-                                await this.CreateWorkProfile(header);
+                                await this.CreateWorkProfile(header, channel);
 
                                 break;
 
@@ -124,15 +124,15 @@ namespace AppServidor
                                 break;
 
                             case Commands.SearchProfile:
-                                await this.SearchProfileAsync(header);
+                                await this.SearchProfileAsync(header, channel);
                                 break;
 
                             case Commands.SendMessage:
-                                await this.SendMessageAsync(header);
+                                await this.SendMessageAsync(header, channel);
                                 break;
 
                             case Commands.CheckInbox:
-                                await this.CheckInbox(header);
+                                await this.CheckInbox(header, channel);
                                 break;
 
                             default:
@@ -149,7 +149,7 @@ namespace AppServidor
             }
         }
 
-        private async Task CheckInbox(Header header)
+        private async Task CheckInbox(Header header, IModel channel)
         {
             var message = "";
             var bufferInfo = new byte[header.IDataLength];
@@ -163,11 +163,16 @@ namespace AppServidor
                 List<Message> messagesToSend = user.MessageBox;
                 if (messagesToSend.Count == 0)
                 {
-                    message = user.Username + " No tiene mensajes para mostrar";
+                    message = user.Username + $"{receivedProfile.Username} no tiene mensajes en su buzon";
+                    Message(channel, message + " [inbox]");
+                    Console.WriteLine(message);
                     await this.communication.SendDataAsync(message, Commands.ServerResponse);
                 }
                 else
                 {
+                    var message1 = $"{receivedProfile.Username} accedio a su buzon";
+                    Message(channel, message1 + " [inbox]");
+                    Console.WriteLine(message);
                     message = this.lkdin.SendStringListOfMessages(messagesToSend, user);
                     await this.communication.SendDataAsync(message, Commands.ServerResponse);
                 }
@@ -179,7 +184,7 @@ namespace AppServidor
             }
         }
 
-        private async Task SendMessageAsync(Header header)
+        private async Task SendMessageAsync(Header header, IModel channel)
         {
             try
             {
@@ -194,11 +199,15 @@ namespace AppServidor
                 {
                     receiver.MessageBox.Add(newMessage);
                     message = $"El mensaje fue enviado al usuario {receiver.Username} correctamente.";
+                    Message(channel, message + " [message]");
+                    Console.WriteLine(message);
                     await this.communication.SendDataAsync(message, Commands.ServerResponse);
                 }
                 else
                 {
                     message = "No existe dicho usuario receptor.";
+                    Message(channel, message + " [message]");
+                    Console.WriteLine(message);
                     await this.communication.SendDataAsync(message, Commands.ServerResponse);
                 }
             }
@@ -217,7 +226,7 @@ namespace AppServidor
             return message;
         }
 
-        private async Task SearchProfileAsync(Header header)
+        private async Task SearchProfileAsync(Header header, IModel channel)
         {
             try
             {
@@ -230,15 +239,18 @@ namespace AppServidor
                 Console.WriteLine(receivedProfile.Username);
                 if (found != null)
                 {
-                    message = "Se encontro el perfil, descargando imagen...";
+                    message = $"Se encontro el perfil de {receivedProfile.Username}, descargando imagen...";
                     FileStreamHandler fh = new FileStreamHandler();
-
+                    Message(channel, message + " [search]");
+                    Console.WriteLine(message);
                     await this.communication.SendDataAsync(message, Commands.ServerResponse);
                     await this.communication.SendFileAsync(found.ProfilePic, fh);
                 }
                 else
                 {
-                    message = "Ese perfil no existe.";
+                    message = $"El perfil de {receivedProfile.Username} no existe.";
+                    Message(channel, message + " [search]");
+                    Console.WriteLine(message);
                     await this.communication.SendDataAsync(message, Commands.ServerResponse);
                 }
             }
@@ -248,7 +260,7 @@ namespace AppServidor
             }
         }
 
-        private async Task CreateWorkProfile(Header header)
+        private async Task CreateWorkProfile(Header header, IModel channel)
         {
             try
             {
@@ -262,7 +274,9 @@ namespace AppServidor
                 FileStreamHandler fh = new FileStreamHandler();
                 await this.communication.ReceiveFileAsync(fh);
                 WorkProfile x = this.lkdin.WorkProfiles.Find(n => n.UserName.Equals(newProfile.UserName));
-                message = $"El perfil de  {x.UserName} se agrego correctamente.";
+                message = $"El perfil de trabajo de {x.UserName} se agrego correctamente.";
+                Message(channel, message + " [creation]");
+                Console.WriteLine(message);
                 await this.communication.SendDataAsync(message, Commands.ServerResponse);
             }
             catch (Exception e)
