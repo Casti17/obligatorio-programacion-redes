@@ -3,6 +3,7 @@ using Domain;
 using Logic;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace AppServidor
@@ -70,32 +71,45 @@ namespace AppServidor
             }
         }
 
-        public void CreateWorkProfile(string username, string profilepic, string description, string skills)
+        public WorkProfile CreateWorkProfile(byte[] data)
         {
+            string[] attributes = Encoding.UTF8.GetString(data).Split("#");
+
+            var username = attributes[0];
+            var imagen = attributes[1];
+            var skills = attributes[2];
+            var description = attributes[3];
             string[] skillSplit = skills.Split("-");
             if (DataValidator.IsValid(username, this._regularRegex) &&
-                DataValidator.IsValid(username, this._regularRegex) &&
-                DataValidator.IsValid(username, this._regularRegex))
+                DataValidator.IsValid(skills, this._regularRegex) &&
+                DataValidator.IsValid(description, this._regularRegex))
             {
                 try
                 {
-                    WorkProfile workProf = Repository.RepositoryInstance.GetProfile(username);
-                    if (workProf == null)
+                    var skillsAdd = "";
+                    foreach (string skill in skillSplit)
                     {
-                        List<string> skillsList = new List<string>();
-                        foreach (string skill in skillSplit)
-                        {
-                            skillsList.Add(skill);
-                        }
-
-                        WorkProfile workProfile = new WorkProfile(username, description, skillsList);
-                        Repository.WorkProfiles.Add(workProfile);
+                            if (skillsAdd == "")
+                            {
+                                skillsAdd += $"{skill}";
+                            }
+                            else
+                            {
+                                skillsAdd += $"\n{skill}";
+                            }
+                            
                     }
+                    WorkProfile workProfile = new WorkProfile(username, description, skillsAdd, imagen);
+                    return workProfile;
                 }
                 catch
                 {
                     throw new Exception("Ya existe un perfil para ese nombre de usuario");
                 }
+            }
+            else
+            {
+                return null;
             }
         }
 

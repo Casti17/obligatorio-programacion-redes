@@ -50,7 +50,7 @@ namespace AppCliente
                             break;
 
                         case "4":
-                            //this.CaseSearchProfileWithFilter(socket);
+                            await this.CaseSearchProfilesAsync();
                             break;
 
                         case "5":
@@ -143,7 +143,12 @@ namespace AppCliente
                 await this.communication.ReceiveFileAsync(fh);
             }
         }
-
+        private async Task CaseSearchProfilesAsync()
+        {
+            await this.communication.SendDataAsync("", Commands.SearchExistingProfiles);
+            Console.WriteLine("Procesando...");
+            await this.communication.RecieveMessageAsync();
+        }
         private async Task CaseSearchProfileWithFilterAsync()
         {
             /*Console.WriteLine("Please type the keywords you would like to search by, separating with -");

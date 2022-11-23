@@ -38,5 +38,16 @@ namespace Domain
             }
             return returns;
         }
+
+        public string GetProfilesString()
+        {
+            string ret = "";
+            foreach (WorkProfile profile in WorkProfiles)
+            {
+                ret += $"\nUserName: {profile.UserName}\n" +
+                       $"Description: {profile.Description}\n";
+            }
+            return ret;
+        }
     }
 }

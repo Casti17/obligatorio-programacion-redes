@@ -20,6 +20,7 @@ namespace AppServidor
         public LkDin lkdin;
         private FileCommsHandler communication;
         private TcpClient _clientTcp;
+        private MainHelper _helper;
         private static readonly SettingsManager settingsManager = new SettingsManager();
 
         public async Task StartAsync()
@@ -30,6 +31,8 @@ namespace AppServidor
                 int.Parse(settingsManager.ReadSettings(ServerConfig.serverPortconfigkey)));
             var tcpListener = new TcpListener(ipEndPoint);
             tcpListener.Start(100);
+            MainHelper helper = new MainHelper();
+            this._helper = helper;
             var factory = new ConnectionFactory(){HostName = "localhost" };
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
@@ -123,6 +126,11 @@ namespace AppServidor
 
                                 break;
 
+                            case Commands.SearchExistingProfiles:
+                                await this.SearchExistingProfilesAsync(header, channel);
+
+                                break;
+
                             case Commands.SearchProfile:
                                 await this.SearchProfileAsync(header, channel);
                                 break;
@@ -184,6 +192,15 @@ namespace AppServidor
             }
         }
 
+        private async Task SearchExistingProfilesAsync(Header header, IModel channel)
+        {
+            string profiles = lkdin.GetProfilesString();
+            var message1 = $"Se consultaron todos los perfiles de trabajo";
+            Message(channel, message1 + " [search]");
+            Console.WriteLine(message1);
+            await this.communication.SendDataAsync(profiles, Commands.ServerResponse);
+        }
+
         private async Task SendMessageAsync(Header header, IModel channel)
         {
             try
@@ -243,6 +260,14 @@ namespace AppServidor
                     FileStreamHandler fh = new FileStreamHandler();
                     Message(channel, message + " [search]");
                     Console.WriteLine(message);
+                    message += $"\nUserName: {found.UserName}\n" +
+                               $"Description: {found.Description}\n" +
+                               $"Skills: {found.Skills.ToString()}";
+                              
+                    //agregar mostrar los datos del perfil
+                    
+                    
+
                     await this.communication.SendDataAsync(message, Commands.ServerResponse);
                     await this.communication.SendFileAsync(found.ProfilePic, fh);
                 }
@@ -256,7 +281,10 @@ namespace AppServidor
             }
             catch (Exception e)
             {
-                throw e;
+                var message = $"Ocurrio un error en la operacion.";
+                Message(channel, message + " [search]");
+                Console.WriteLine(message);
+                await this.communication.SendDataAsync(message, Commands.ServerResponse);
             }
         }
 
@@ -267,17 +295,30 @@ namespace AppServidor
                 var message = "";
                 var bufferData = new byte[header.IDataLength];
                 await this.communication.ReceiveDataAsync(header.IDataLength, bufferData);
-                ProfileInfo receivedProfile = new ProfileInfo();
-                receivedProfile.Decode(bufferData);
-                WorkProfile newProfile = receivedProfile.ToEntity();
-                this.lkdin.WorkProfiles.Add(newProfile);
-                FileStreamHandler fh = new FileStreamHandler();
-                await this.communication.ReceiveFileAsync(fh);
-                WorkProfile x = this.lkdin.WorkProfiles.Find(n => n.UserName.Equals(newProfile.UserName));
-                message = $"El perfil de trabajo de {x.UserName} se agrego correctamente.";
-                Message(channel, message + " [creation]");
-                Console.WriteLine(message);
-                await this.communication.SendDataAsync(message, Commands.ServerResponse);
+                WorkProfile newProfile = _helper.CreateWorkProfile(bufferData);
+                if(lkdin.WorkProfiles.Any(x=>x.UserName.Equals(newProfile.UserName)))
+                {
+                    message = $"Ya existe un perfil de trabajo para el usuario {newProfile.UserName}";
+                    Message(channel, message + " [creation]");
+                    Console.WriteLine(message);
+                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
+
+                }
+                else
+                {
+                    this.lkdin.WorkProfiles.Add(newProfile);
+                    FileStreamHandler fh = new FileStreamHandler();
+                    await this.communication.ReceiveFileAsync(fh);
+                    WorkProfile x = this.lkdin.WorkProfiles.Find(n => n.UserName.Equals(newProfile.UserName));
+                    message = $"El perfil de trabajo de {x.UserName} se agrego correctamente.";
+                    Message(channel, message + " [creation]");
+                    Console.WriteLine(message);
+                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
+                }
+                //ProfileInfo receivedProfile = new ProfileInfo();
+                //receivedProfile.Decode(bufferData);
+               // WorkProfile newProfile = receivedProfile.ToEntity();
+
             }
             catch (Exception e)
             {

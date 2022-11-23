@@ -17,7 +17,7 @@ namespace Domain.DTO
                 UserName = Username,
                 Description = Descripcion,
                 ProfilePic = Imagen,
-                Skills = new List<string>(),
+                Skills = Skills,
             };
         }
 
