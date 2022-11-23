@@ -91,7 +91,6 @@ namespace AppCliente
             return tcpClient;
         }
 
-
         private async Task CaseCheckInboxAsync()
         {
             string username;
@@ -187,7 +186,6 @@ namespace AppCliente
 
         private async Task CaseCreateWorkProfileAsync()
         {
-
             string username, path, skills, descripcion;
             Console.WriteLine("A continuacion se pediran los datos requeridos para crear usuario.");
             Console.WriteLine("Ingrese el Nombre de Usuario");
