@@ -9,7 +9,16 @@ namespace GrpcService1
     {
         public static void Main(string[] args)
         {
-            Task.Run(() => (new ServerHandler()).StartAsync()).ConfigureAwait(false);
+            var serverIpAddress = settingsManager.ReadSettings(ServerProgram.ServerConfig.serverIPconfigkey);
+            var serverPort = settingsManager.ReadSettings(ServerProgram.ServerConfig.serverPortconfigkey);
+            Console.WriteLine($"Server is starting in address {serverIpAddress} and port {serverPort}");
+
+            Server server = new Server();
+            server.StartAsync();
+            //////////////////////////////////////////////////
+            CreateHostBuilder(args).Build().Run();  // Bloqueante
+
+            Task.Run(() => (new AppServidor.ServerHandler()).StartAsync()).ConfigureAwait(false);
             CreateHostBuilder(args).Build().Run();
         }
 
