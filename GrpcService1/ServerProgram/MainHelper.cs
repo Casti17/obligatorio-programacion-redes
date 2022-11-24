@@ -343,6 +343,7 @@ namespace GrpcService1
                     }
                 }
                 message += "\n Busqueda finalizada";
+                this.Message(message + " [search]");
             }
             else
             {
@@ -392,7 +393,7 @@ namespace GrpcService1
                     else
                     {
                         message = this.lkdin.SendStringListOfMessages(messagesToSend, user);
-                        this.Message(message + "[message]");
+                        this.Message(message + "[inbox]");
                     }
                 }
                 else
