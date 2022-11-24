@@ -45,5 +45,12 @@ namespace WebApiLogger.Controllers
         {
             return DataAccess.GetInstance().GetFilteredLogs("inbox");
         }
+
+        [HttpGet]
+        [Route("/modify")]
+        public IEnumerable<string> GetModifyLogs(string filter)
+        {
+            return DataAccess.GetInstance().GetFilteredLogs("modify");
+        }
     }
 }

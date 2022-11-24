@@ -9,8 +9,6 @@ namespace GrpcService1
     {
         public static async Task Main(string[] args)
         {
-            //ServerHandler server = new ServerHandler();
-            //await server.StartAsync();
             Task.Run(() => (new ServerHandler()).Start());
             //////////////////////////////////////////////////
             CreateHostBuilder(args).Build().Run();  // Bloqueante

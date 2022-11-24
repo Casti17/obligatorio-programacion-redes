@@ -1,4 +1,5 @@
-﻿using DataAccess;
+﻿using Communication;
+using DataAccess;
 using Domain;
 using RabbitMQ.Client;
 using System;
@@ -12,7 +13,6 @@ namespace GrpcService1
     {
         private readonly int _maxLength = 20;
 
-        //private readonly Regex _formalRegex = new Regex("[A - Za - z]{3,20}");
         private readonly Regex _regularRegex = new Regex(@"([A - Za - z\w\-\.]{3,20} *)$");
 
         private Logic.MainHelper MainBusinessLogic { get; set; }
@@ -21,6 +21,7 @@ namespace GrpcService1
         private static readonly object singletonlock = new object();
         public LkDin lkdin;
         public IModel channel;
+        private FileHandler fh = new FileHandler();
 
         public MainHelper()
         {
@@ -61,6 +62,7 @@ namespace GrpcService1
 
         public string DeleteUser(string username_)
         {
+            var message = "";
             try
             {
                 lock (this.lkdin.Users)
@@ -69,11 +71,12 @@ namespace GrpcService1
                     User userExists = users.Find(x => x.Username.Equals(username_));
                     if (userExists == null)
                     {
-                        throw new Exception("No existe un usuario con ese nombre!");
+                        message = "No existe un usuario con ese nombre!";
                     }
                     else
                     {
                         this.lkdin.Users.Remove(userExists);
+                        message = $"Se elimino el usuario {username_} correctamente [deletion]";
                         this.Message($"Se elimino el usuario {username_} correctamente [deletion]");
                     }
                 }
@@ -82,11 +85,12 @@ namespace GrpcService1
             {
                 throw e;
             }
-            return "Usuario eliminado con exito!";
+            return message;
         }
 
         internal string ModifyUser(string username, string newName)
         {
+            var message1 = "";
             try
             {
                 lock (this.lkdin.Users)
@@ -96,11 +100,12 @@ namespace GrpcService1
                     if (userExists != null)
                     {
                         userExists.Username = newName;
+                        message1 = $"Se modifico el usuario {username} correctamente [modify]";
                         this.Message($"Se modifico el usuario {username} correctamente. Ahora su nombre es {newName} [modify]");
                     }
                     else
                     {
-                        throw new Exception("No existe un usuario con ese nombre.");
+                        message1 = "No existe un usuario con ese nombre.";
                     }
                 }
             }
@@ -108,11 +113,12 @@ namespace GrpcService1
             {
                 throw e;
             }
-            return "Usuario modificado correctamente";
+            return message1;
         }
 
         public string CreateUser(string name, string surname, string username)
         {
+            var message1 = "";
             try
             {
                 lock (this.lkdin.Users)
@@ -123,24 +129,26 @@ namespace GrpcService1
                     {
                         User newUser = new User(name, surname, username);
                         this.lkdin.Users.Add(newUser);
+                        message1 = $"Se creo el usuario {username} correctamente [creation]";
                         this.Message($"Se creo el usuario {username} correctamente [creation]");
                     }
                     else
                     {
-                        throw new Exception("Ya existe un usuario con ese nombre!");
+                        message1 = "Ya existe un usuario con ese nombre!";
                     }
                 }
             }
             catch (Exception e)
             {
-                throw e;
+                return e.Message;
             }
 
-            return "Usuario creado correctamente";
+            return message1;
         }
 
         internal string DeleteProfile(string username_)
         {
+            var message = "";
             try
             {
                 lock (this.lkdin.WorkProfiles)
@@ -149,11 +157,12 @@ namespace GrpcService1
                     WorkProfile profileExists = profiles.Find(x => x.UserName.Equals(username_));
                     if (profileExists == null)
                     {
-                        throw new Exception("No existe un perfil con ese nombre de usuario!");
+                        message = "No existe un perfil con ese nombre de usuario!";
                     }
                     else
                     {
                         this.lkdin.WorkProfiles.Remove(profileExists);
+                        message = $"Se elimino el perfil del usuario {username_} correctamente [deletion]";
                         this.Message($"Se elimino el perfil del usuario {username_} correctamente [deletion]");
                     }
                 }
@@ -162,16 +171,13 @@ namespace GrpcService1
             {
                 throw e;
             }
-            return "Perfil eliminado con exito!";
+            return message;
         }
 
         public string CreateWorkProfile(string username, string profilepic, string description, string skills)
         {
+            var message = "";
             string[] skillSplit = skills.Split("-");
-            /*if (DataValidator.IsValid(username, this._regularRegex) &&
-                DataValidator.IsValid(username, this._regularRegex) &&
-                DataValidator.IsValid(username, this._regularRegex))
-            {*/
             try
             {
                 lock (this.lkdin.WorkProfiles)
@@ -188,10 +194,12 @@ namespace GrpcService1
                         WorkProfile workProfile = new WorkProfile(username, description, skillsList);
                         workProfile.ProfilePic = profilepic;
                         this.lkdin.WorkProfiles.Add(workProfile);
+                        message = $"Se agrego el perfil de {username} correctamente. [creation]";
+                        this.Message($"Se agrego el perfil de {username} correctamente. [creation]");
                     }
                     else
                     {
-                        throw new Exception("Ya existe un perfil para ese nombre de usuario!");
+                        message = "Ya existe un perfil para ese nombre de usuario!";
                     }
                 }
             }
@@ -199,12 +207,12 @@ namespace GrpcService1
             {
                 throw e;
             }
-            //}
-            return "Se agrego el perfil del usuario con exito!";
+            return message;
         }
 
         internal string ModifyProfile(string username, string? newPicturePath, string? newDescription, string? newSkills)
         {
+            var message = "";
             try
             {
                 lock (this.lkdin.WorkProfiles)
@@ -222,11 +230,12 @@ namespace GrpcService1
                         profileExists.ProfilePic = newPicturePath;
                         profileExists.Description = newDescription;
                         profileExists.Skills = skillsList;
+                        message = $"Se modifico el perfil de {username} correctamente. [modify]";
                         this.Message($"Se modifico el perfil de {username} correctamente. [modify]");
                     }
                     else
                     {
-                        throw new Exception("No existe un perfil con ese nombre de usuario.");
+                        message = "No existe un perfil con ese nombre de usuario.";
                     }
                 }
             }
@@ -234,11 +243,12 @@ namespace GrpcService1
             {
                 throw e;
             }
-            return "Perfil modificado correctamente";
+            return message;
         }
 
         internal string DeleteImage(string username_)
         {
+            var message = "";
             try
             {
                 lock (this.lkdin.WorkProfiles)
@@ -247,12 +257,13 @@ namespace GrpcService1
                     WorkProfile profileExists = profiles.Find(x => x.UserName.Equals(username_));
                     if (profileExists == null)
                     {
-                        throw new Exception("No existe un perfil con ese nombre de usuario!");
+                        message = "No existe un perfil con ese nombre de usuario!";
                     }
                     else
                     {
-                        //this.lkdin.WorkProfiles.Remove(profileExists);
+                        this.fh.DeleteFile(profileExists.ProfilePic);
                         profileExists.ProfilePic = "";
+                        message = $"Se elimino la imagen del perfil del usuario {username_} correctamente [deletion]";
                         this.Message($"Se elimino la imagen del perfil del usuario {username_} correctamente [deletion]");
                     }
                 }
@@ -261,45 +272,139 @@ namespace GrpcService1
             {
                 throw e;
             }
-            return "Imagen eliminada con exito!";
+            return message;
         }
 
-        public void AssociateImageToProfile(string username, string path)
+        internal string SearchProfileAsync(string username)
         {
+            var message = "";
             try
             {
-                WorkProfile workProf = Repository.RepositoryInstance.GetProfile(username);
+                WorkProfile found = this.lkdin.WorkProfiles.Find(prof => prof.UserName.Equals(username));
+                if (found == null)
+                {
+                    message = "Profile does not exist";
+                }
+                else
+                {
+                    message = $"Se encontro el perfil de {username}, descargando imagen...";
+
+                    this.Message(message + " [search]");
+
+                    message += $"\nUserName: {found.UserName}\n" +
+                               $"Description: {found.Description}\n" +
+                               $"Skills: {found.Skills.ToString()}";
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            return message;
+        }
+
+        public string AssociateImageToProfile(string username, string path)
+        {
+            var message = "";
+            try
+            {
+                WorkProfile workProf = this.lkdin.WorkProfiles.Find(u => u.UserName.Equals(username));
                 if (workProf == null)
                 {
-                    throw new Exception("Profile does not exist");
+                    message = "Profile does not exist";
                 }
-                workProf.ProfilePic = path;
+                else
+                {
+                    workProf.ProfilePic = path;
+                    message = $"Se actualizo la imagen de perfil {username} correctamente!";
+                    this.Message(message + "[modify]");
+                }
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
             }
+            return message;
         }
 
-        public List<WorkProfile> SearchFilters(string[] dataArray)
+        public string SearchFilters(string keyword)
         {
-            return (List<WorkProfile>)Repository.RepositoryInstance.GetProfilesByKeyWord(dataArray);
+            var message = "";
+            var profiles = this.lkdin.WorkProfiles;
+            bool flag = false;
+            if (profiles.Count > 0)
+            {
+                foreach (var profile in profiles)
+                {
+                    if (profile.UserName.Contains(keyword) || profile.Skills.Contains(keyword) || profile.Description.Contains(keyword))
+                    {
+                        message += $"\nUserName: {profile.UserName}\n" +
+                           $"Description: {profile.Description}\n";
+                    }
+                }
+                message += "\n Busqueda finalizada";
+            }
+            else
+            {
+                message = "No hay perfiles en el sistema.";
+            }
+
+            return message;
         }
 
-        public WorkProfile Search(string data)
+        public string SendMessage(string sender, string receptor, Message newMessage)
         {
-            return Repository.RepositoryInstance.GetProfile(data);
+            var message = "";
+            try
+            {
+                User receiver = this.lkdin.Users.Find(u => u.Username.Equals(receptor));
+                if (receiver != null)
+                {
+                    receiver.MessageBox.Add(newMessage);
+                    message = $"{sender} envio un mensaje a {receptor}. [message]";
+                    this.Message($"{sender} envio un mensaje a {receptor}. [message]");
+                }
+                else
+                {
+                    message = "No existe dicho receptor.";
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            return message;
         }
 
-        public void SendMessage(string sender, string receptor, string message)
+        public string CheckInbox(string username)
         {
-            Repository.RepositoryInstance.SendMessage(sender, receptor, message);
-        }
-
-        public List<Message> CheckInbox(string username)
-        {
-            List<Message> unreads = (List<Message>)Repository.RepositoryInstance.GetUnreadMessages(username);
-            return unreads;
+            var message = "";
+            try
+            {
+                User user = this.lkdin.Users.Find(u => u.Username.Equals(username));
+                if (user != null)
+                {
+                    List<Message> messagesToSend = user.MessageBox;
+                    if (messagesToSend.Count == 0)
+                    {
+                        message = $"El usuario {username} no tiene mensajes en su inbox.";
+                    }
+                    else
+                    {
+                        message = this.lkdin.SendStringListOfMessages(messagesToSend, user);
+                        this.Message(message + "[message]");
+                    }
+                }
+                else
+                {
+                    message = "No existe ese usuario.";
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            return message;
         }
     }
 }

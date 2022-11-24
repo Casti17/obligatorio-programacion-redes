@@ -19,32 +19,6 @@ namespace AppServidor
             this.MainBusinessLogic = new Logic.MainHelper();
         }
 
-        /*private void DoAuthResponse(TextHeader textHeader, NetworkStream networkStream, int responseType)
-        {
-            var connectionHelper = ServerHandler.GetConnectionHelper();
-            var username = connectionHelper.ReceiveTextData(textHeader, networkStream).Result;
-            try
-            {
-                var userId = responseType == CommandConstants.Login
-                                    ? LogInUser(username, networkStream)
-                                    : RegisterUser(username, networkStream);
-
-                SendIdToClient(userId, networkStream);
-
-                Console.WriteLine($"Logged in as: {username}");
-            }
-            catch (UserAlreadyExistsException)
-            {
-                Console.WriteLine($"Sign-up Failed for requested user {username}");
-                connectionHelper.SendFailedResponse(networkStream);
-            }
-            catch (UserNotFoundException)
-            {
-                Console.WriteLine($"Login Failed for requested user {username}");
-                connectionHelper.SendFailedResponse(networkStream);
-            }
-        }*/
-
         public void CreateUser(string name, string surname, string username)
         {
             if (DataValidator.IsValid(name, this._formalRegex) && DataValidator.IsValid(surname, this._formalRegex) && DataValidator.IsValid(username, this._regularRegex))

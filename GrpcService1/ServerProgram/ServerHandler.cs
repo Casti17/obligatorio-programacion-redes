@@ -22,15 +22,6 @@ namespace GrpcService1.ServerProgram
 
         public async Task Start()
         {
-            /*Console.WriteLine("Server is starting...");
-            var ipEndPoint = new IPEndPoint(
-                IPAddress.Parse(settingsManager.ReadSettings(ServerConfig.serverIPconfigkey)),
-                int.Parse(settingsManager.ReadSettings(ServerConfig.serverPortconfigkey)));
-            var tcpListener = new TcpListener(ipEndPoint);
-            tcpListener.Start(100);
-            Task.Run(() => this.ListenForConnectionsAsync(tcpListener));*/
-            //Console.WriteLine("Server started listening connections on {0}-{1}", settingsManager.ReadSettings(ServerConfig.serverIPconfigkey), settingsManager.ReadSettings(ServerConfig.serverPortconfigkey));
-
             var factory = new ConnectionFactory() { HostName = "localhost" };
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
@@ -126,7 +117,7 @@ namespace GrpcService1.ServerProgram
                         {
                             case Commands.CreateUser:
 
-                                await this.CreateUser(header, channel);
+                                await this.CreateUser(header);
 
                                 break;
 
@@ -136,6 +127,12 @@ namespace GrpcService1.ServerProgram
                                 break;
 
                             case Commands.AssociateImageToProfile:
+                                await this.AssociateImage(header);
+
+                                break;
+
+                            case Commands.SearchExistingProfiles:
+                                await this.SearchExistingProfilesAsync(header);
 
                                 break;
 
@@ -167,33 +164,48 @@ namespace GrpcService1.ServerProgram
             this._clientTcp.Close();
         }
 
-        private async Task CheckInbox(Header header)
+        private async Task AssociateImage(Header header)
+        {
+            var message = "";
+            var bufferData = new byte[header.IDataLength];
+            await this.communication.ReceiveDataAsync(header.IDataLength, bufferData);
+            ProfileInfo receivedProfile = new ProfileInfo();
+            receivedProfile.Decode(bufferData);
+            message = this._helper.AssociateImageToProfile(receivedProfile.Username, receivedProfile.Imagen);
+            FileStreamHandler fh = new FileStreamHandler();
+            await this.communication.ReceiveFileAsync(fh);
+            await this.communication.SendDataAsync(message, Commands.ServerResponse);
+        }
+
+        private async Task SearchExistingProfilesAsync(Header header)
         {
             var message = "";
             var bufferInfo = new byte[header.IDataLength];
-
             await this.communication.ReceiveDataAsync(header.IDataLength, bufferInfo);
-            ProfileSearchInfo receivedProfile = new ProfileSearchInfo();
-            receivedProfile.Decode(bufferInfo);
-            User user = this.lkdin.Users.Find(u => u.Username.Equals(receivedProfile.Username));
-            if (user != null)
+            ProfileSearchInfo receivedFilter = new ProfileSearchInfo();
+            receivedFilter.Decode(bufferInfo);
+            message = this._helper.SearchFilters(receivedFilter.Username);
+
+            await this.communication.SendDataAsync(message, Commands.ServerResponse);
+        }
+
+        private async Task CheckInbox(Header header)
+        {
+            try
             {
-                List<Message> messagesToSend = user.MessageBox;
-                if (messagesToSend.Count == 0)
-                {
-                    message = user.Username + " No tiene mensajes para mostrar";
-                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
-                }
-                else
-                {
-                    message = this.lkdin.SendStringListOfMessages(messagesToSend, user);
-                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
-                }
-            }
-            else
-            {
-                message = "No existe ese usuario.";
+                var message = "";
+                var bufferInfo = new byte[header.IDataLength];
+
+                await this.communication.ReceiveDataAsync(header.IDataLength, bufferInfo);
+                ProfileSearchInfo receivedProfile = new ProfileSearchInfo();
+                receivedProfile.Decode(bufferInfo);
+                message = this._helper.CheckInbox(receivedProfile.Username);
+
                 await this.communication.SendDataAsync(message, Commands.ServerResponse);
+            }
+            catch (Exception e)
+            {
+                throw e;
             }
         }
 
@@ -207,18 +219,9 @@ namespace GrpcService1.ServerProgram
                 SendMessageInfo receivedMessage = new SendMessageInfo();
                 receivedMessage.Decode(bufferInfo);
                 Message newMessage = receivedMessage.ToEntity();
-                User receiver = this.lkdin.Users.Find(u => u.Username.Equals(receivedMessage.Receiver));
-                if (receiver != null)
-                {
-                    receiver.MessageBox.Add(newMessage);
-                    message = $"El mensaje fue enviado al usuario {receiver.Username} correctamente.";
-                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
-                }
-                else
-                {
-                    message = "No existe dicho usuario receptor.";
-                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
-                }
+                message = this._helper.SendMessage(receivedMessage.Sender, receivedMessage.Receiver, newMessage);
+
+                await this.communication.SendDataAsync(message, Commands.ServerResponse);
             }
             catch (Exception e)
             {
@@ -235,19 +238,16 @@ namespace GrpcService1.ServerProgram
                 await this.communication.ReceiveDataAsync(header.IDataLength, bufferInfo);
                 ProfileSearchInfo receivedProfile = new ProfileSearchInfo();
                 receivedProfile.Decode(bufferInfo);
-                WorkProfile found = this.lkdin.WorkProfiles.Find(prof => prof.UserName.Equals(receivedProfile.Username));
-                Console.WriteLine(receivedProfile.Username);
-                if (found != null)
-                {
-                    message = "Se encontro el perfil, descargando imagen...";
-                    FileStreamHandler fh = new FileStreamHandler();
 
+                message = this._helper.SearchProfileAsync(receivedProfile.Username);
+                if (message.Contains("exist"))
+                {
                     await this.communication.SendDataAsync(message, Commands.ServerResponse);
-                    await this.communication.SendFileAsync(found.ProfilePic, fh);
                 }
                 else
                 {
-                    message = "Ese perfil no existe.";
+                    FileStreamHandler fh = new FileStreamHandler();
+                    await this.communication.ReceiveFileAsync(fh);
                     await this.communication.SendDataAsync(message, Commands.ServerResponse);
                 }
             }
@@ -266,18 +266,17 @@ namespace GrpcService1.ServerProgram
                 await this.communication.ReceiveDataAsync(header.IDataLength, bufferData);
                 ProfileInfo receivedProfile = new ProfileInfo();
                 receivedProfile.Decode(bufferData);
-                //this._helper.CreateWorkProfile()
-                /*
-                 *
-                    VER QUE HACER CON LA PARTE DE FILE HANDLER
-                 */
-                WorkProfile newProfile = receivedProfile.ToEntity();
-                this.lkdin.WorkProfiles.Add(newProfile);
-                FileStreamHandler fh = new FileStreamHandler();
-                await this.communication.ReceiveFileAsync(fh);
-                WorkProfile x = this.lkdin.WorkProfiles.Find(n => n.UserName.Equals(newProfile.UserName));
-                message = $"El perfil de  {x.UserName} se agrego correctamente.";
-                await this.communication.SendDataAsync(message, Commands.ServerResponse);
+                message = this._helper.CreateWorkProfile(receivedProfile.Username, receivedProfile.Imagen, receivedProfile.Descripcion, receivedProfile.Skills);
+                if (message.Contains("existe"))
+                {
+                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
+                }
+                else
+                {
+                    FileStreamHandler fh = new FileStreamHandler();
+                    await this.communication.ReceiveFileAsync(fh);
+                    await this.communication.SendDataAsync(message, Commands.ServerResponse);
+                }
             }
             catch (Exception e)
             {
@@ -285,23 +284,18 @@ namespace GrpcService1.ServerProgram
             }
         }
 
-        public async Task CreateUser(Header header, IModel channel)
+        public async Task CreateUser(Header header)
         {
             try
             {
+                var message = "";
                 var bufferData = new byte[header.IDataLength];
                 await this.communication.ReceiveDataAsync(header.IDataLength, bufferData);
 
                 UserInfo receivedInfo = new UserInfo();
                 receivedInfo.Decode(bufferData);
 
-                this._helper.CreateUser(receivedInfo.Name, receivedInfo.Surname, receivedInfo.Username);
-                /*//this.businessLogic.CreateUser(receivedInfo);*/
-                // User newUser = receivedInfo.ToEntity();
-
-                // this.lkdin.Users.Add(newUser);
-                //User x = this.lkdin.Users.Find(n => n.Username.Equals(receivedInfo.Username));
-                var message = $"El usuario {receivedInfo.Username} se agrego correctamente.";
+                message = this._helper.CreateUser(receivedInfo.Name, receivedInfo.Surname, receivedInfo.Username);
                 await this.communication.SendDataAsync(message, Commands.ServerResponse);
             }
             catch (Exception e)

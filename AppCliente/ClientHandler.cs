@@ -4,6 +4,7 @@ using Domain.DTO;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace AppCliente
@@ -46,11 +47,11 @@ namespace AppCliente
                             break;
 
                         case "3":
-                            //this.CaseUpdateImageWorkProfile(socket);
+                            await this.CaseUpdateImageWorkProfile();
                             break;
 
                         case "4":
-                            //this.CaseSearchProfileWithFilter(socket);
+                            await this.CaseSearchProfileWithFilterAsync();
                             break;
 
                         case "5":
@@ -145,43 +146,42 @@ namespace AppCliente
 
         private async Task CaseSearchProfileWithFilterAsync()
         {
-            /*Console.WriteLine("Please type the keywords you would like to search by, separating with -");
-            var filters = Console.ReadLine();
-            bool correctFormat;
-            correctFormat = Regex.IsMatch(filters, "^[a - zA - Z0 - 9_.-] *$");
-            while (!correctFormat)
+            string username;
+            Console.WriteLine("Escriba una palabra para filtrar.");
+            username = Console.ReadLine();
+            ProfileSearchInfo newSearch = new ProfileSearchInfo()
             {
-                Console.WriteLine("Incorrect format, please try again");
-                Console.WriteLine("Please type the keywords you would like to search by, separating with -");
-                filters = Console.ReadLine();
-                correctFormat = Regex.IsMatch(filters, @"^[a-zA-Z]+$");
-            }*/
+                Username = username,
+            };
+            await this.communication.SendDataAsync(newSearch.Code(), Commands.SearchExistingProfiles);
+            Console.WriteLine("Procesando...");
+            var x = await this.communication.RecieveMessageAsync();
         }
 
-        private void CaseUpdateImageWorkProfile(Socket socket)
+        private async Task CaseUpdateImageWorkProfile()
         {
-            /*Console.WriteLine("Which work profile would you like to update?");
-            var username = Console.ReadLine();
-            bool correctFormat = Regex.IsMatch(username, @"^[a-zA-Z]+$");
-            while (!correctFormat)
+            string username, path;
+            Console.WriteLine("Ingrese el Nombre de Usuario");
+            username = Console.ReadLine();
+            Console.WriteLine("Ingrese nuevo path de la imagen");
+            path = Console.ReadLine();
+            ProfileInfo newProfile = new ProfileInfo()
             {
-                Console.WriteLine("Incorrect format, please try again.");
-                Console.WriteLine("Which work profile would you like to update?");
-                username = Console.ReadLine();
-                correctFormat = Regex.IsMatch(username, @"^[a-zA-Z]+$");
-            }
-            Console.WriteLine("Please insert the image path:");
-            var path = Console.ReadLine();
-            correctFormat = Regex.IsMatch(path, @"^[a-zA-Z0-9\_]+$");
-            while (!correctFormat)
+                Username = username,
+                Imagen = path,
+            };
+            try
             {
-                Console.WriteLine("Incorrect format, please try again.");
-                Console.WriteLine("Image path?");
-                path = Console.ReadLine();
-                correctFormat = Regex.IsMatch(path, @"^[a-zA-Z]+$");
+                await this.communication.SendDataAsync(newProfile.Code(), Commands.AssociateImageToProfile);
+                FileStreamHandler fh = new FileStreamHandler();
+                await this.communication.SendFileAsync(path, fh);
+                Console.WriteLine("Procesando...");
+                await this.communication.RecieveMessageAsync();
             }
-            string update = username + path;
-            this.mainHelper.UpdateProfilePicture(update, socket);*/
+            catch (Exception e)
+            {
+                Console.WriteLine("Algo salio mal, verifique que haya puesto campos validos (no se permiten numeros)" + e);
+            }
         }
 
         private async Task CaseCreateWorkProfileAsync()
@@ -257,7 +257,7 @@ namespace AppCliente
             }
             catch (Exception e)
             {
-                Console.WriteLine("Algo salio mal, verifique que haya puesto campos validos (no se permiten numeros)" + e);
+                Console.WriteLine("Algo salio mal, verifique que haya puesto campos validos (no se permiten numeros)");
             }
         }
     }

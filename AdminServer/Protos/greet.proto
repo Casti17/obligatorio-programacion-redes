@@ -14,9 +14,6 @@ service Greeter {
   rpc DeleteProfile (Username) returns (MessageReply);
   rpc ModifyProfile (ModifyProfileRequest) returns (MessageReply);
   rpc DeleteImage (Username) returns (MessageReply);
-  /*rpc DeleteProfile (StandardRequest) returns (StandardResponse);
-  
-  rpc ReturnGame (StandardRequest) returns (StandardResponse);*/
 }
 
 // The request message containing the user's name.

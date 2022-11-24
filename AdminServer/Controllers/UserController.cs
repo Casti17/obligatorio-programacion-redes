@@ -30,7 +30,7 @@ namespace AdminServer.Controllers
             return this.Ok(reply.Message);
         }
 
-        [HttpPut("update")]
+        [HttpPut("updates")]
         public async Task<IActionResult> ModifyUser([FromBody] ModifyUserRequest user)
         {
             using var channel = GrpcChannel.ForAddress(this.grpcURL);
@@ -39,12 +39,14 @@ namespace AdminServer.Controllers
             return this.Ok(reply.Message);
         }
 
-        [HttpDelete]
-        public async Task<IActionResult> DeleteUser(Username userName)
+        [HttpDelete("{userName}")]
+        public async Task<ActionResult> DeleteUser(string userName)
         {
+            Username user = new Username();
+            user.Username_ = userName;
             using var channel = GrpcChannel.ForAddress(this.grpcURL);
             this.client = new Greeter.GreeterClient(channel);
-            var reply = await this.client.DeleteUserAsync(userName);
+            var reply = await this.client.DeleteUserAsync(user);
             return this.Ok(reply.Message);
         }
     }
