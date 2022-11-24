@@ -30,7 +30,7 @@ namespace AppServidor
                 IPAddress.Parse(settingsManager.ReadSettings(ServerConfig.serverIPconfigkey)),
                 int.Parse(settingsManager.ReadSettings(ServerConfig.serverPortconfigkey)));
             var tcpListener = new TcpListener(ipEndPoint);
-            tcpListener.Start(100);
+            tcpListener.Start(10);
             MainHelper helper = new MainHelper();
             this._helper = helper;
             var factory = new ConnectionFactory(){HostName = "localhost" };
@@ -195,6 +195,10 @@ namespace AppServidor
         private async Task SearchExistingProfilesAsync(Header header, IModel channel)
         {
             string profiles = lkdin.GetProfilesString();
+            if (profiles == "")
+            {
+                profiles = "Todavia no se han registrado perfiles de trabajo";
+            }
             var message1 = $"Se consultaron todos los perfiles de trabajo";
             Message(channel, message1 + " [search]");
             Console.WriteLine(message1);
@@ -295,10 +299,12 @@ namespace AppServidor
                 var message = "";
                 var bufferData = new byte[header.IDataLength];
                 await this.communication.ReceiveDataAsync(header.IDataLength, bufferData);
-                WorkProfile newProfile = _helper.CreateWorkProfile(bufferData);
-                if(lkdin.WorkProfiles.Any(x=>x.UserName.Equals(newProfile.UserName)))
+                ProfileSearchInfo receivedProfile = new ProfileSearchInfo();
+                receivedProfile.Decode(bufferData);
+                
+                if(lkdin.WorkProfiles.Any(x=>x.UserName.Equals(receivedProfile.Username)))
                 {
-                    message = $"Ya existe un perfil de trabajo para el usuario {newProfile.UserName}";
+                    message = $"Ya existe un perfil de trabajo para el usuario {receivedProfile.Username}";
                     Message(channel, message + " [creation]");
                     Console.WriteLine(message);
                     await this.communication.SendDataAsync(message, Commands.ServerResponse);
@@ -306,6 +312,7 @@ namespace AppServidor
                 }
                 else
                 {
+                    WorkProfile newProfile = _helper.CreateWorkProfile(bufferData);
                     this.lkdin.WorkProfiles.Add(newProfile);
                     FileStreamHandler fh = new FileStreamHandler();
                     await this.communication.ReceiveFileAsync(fh);
@@ -315,10 +322,6 @@ namespace AppServidor
                     Console.WriteLine(message);
                     await this.communication.SendDataAsync(message, Commands.ServerResponse);
                 }
-                //ProfileInfo receivedProfile = new ProfileInfo();
-                //receivedProfile.Decode(bufferData);
-               // WorkProfile newProfile = receivedProfile.ToEntity();
-
             }
             catch (Exception e)
             {

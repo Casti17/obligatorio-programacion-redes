@@ -147,7 +147,7 @@ namespace AppCliente
         {
             await this.communication.SendDataAsync("", Commands.SearchExistingProfiles);
             Console.WriteLine("Procesando...");
-            await this.communication.RecieveMessageAsync();
+            var x = await this.communication.RecieveMessageAsync();
         }
         private async Task CaseSearchProfileWithFilterAsync()
         {
