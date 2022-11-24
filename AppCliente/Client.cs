@@ -1,11 +1,13 @@
-﻿namespace AppCliente
+﻿using System.Threading.Tasks;
+
+namespace AppCliente
 {
     public class Client
     {
-        private static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
             var clientHandler = new ClientHandler();
-            clientHandler.Start();
+            await clientHandler.StartAsync();
         }
     }
 }

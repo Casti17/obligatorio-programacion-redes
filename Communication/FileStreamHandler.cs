@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Communication
 {
@@ -12,17 +13,17 @@ namespace Communication
             this._fileHandler = new FileHandler();
         }
 
-        public byte[] Read(string path, long offset, int length)
+        public async Task<byte[]> ReadDataAsync(string path, long offset, int length)
         {
             if (this._fileHandler.FileExists(path))
             {
                 var data = new byte[length];
 
-                using var fs = new FileStream(path, FileMode.Open) { Position = offset };
+                await using var fs = new FileStream(path, FileMode.Open) { Position = offset };
                 var bytesRead = 0;
                 while (bytesRead < length)
                 {
-                    var read = fs.Read(data, bytesRead, length - bytesRead);
+                    var read = await fs.ReadAsync(data, bytesRead, length - bytesRead);
                     if (read == 0)
                     {
                         throw new Exception("Error reading file");
@@ -37,11 +38,18 @@ namespace Communication
             throw new Exception("File does not exist");
         }
 
-        public void Write(string fileName, byte[] data)
+        public async Task WriteData(string fileName, byte[] data)
         {
-            var fileMode = this._fileHandler.FileExists(fileName) ? FileMode.Append : FileMode.Create;
-            using var fs = new FileStream(fileName, fileMode);
-            fs.Write(data, 0, data.Length);
+            if (File.Exists(fileName))
+            {
+                await using FileStream fileStream = new FileStream(fileName, FileMode.Append);
+                await fileStream.WriteAsync(data, 0, data.Length);
+            }
+            else
+            {
+                await using FileStream fileStream = new FileStream(fileName, FileMode.Create);
+                await fileStream.WriteAsync(data, 0, data.Length);
+            }
         }
     }
 }

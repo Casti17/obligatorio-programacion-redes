@@ -11,6 +11,10 @@ namespace Domain
             this.Skills = skills;
         }
 
+        public WorkProfile()
+        {
+        }
+
         public string ProfilePic { get; set; }
         public string Description { get; set; }
         public List<string> Skills { get; set; }

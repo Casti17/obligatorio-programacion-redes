@@ -23,6 +23,10 @@ namespace Communication
             set => this._iDataLength = value;
         }
 
+        public Header()
+        {
+        }
+
         public Header(int command, int datalength)
         {
             string commandToString = command.ToString("D2"); // padding de 2 0s

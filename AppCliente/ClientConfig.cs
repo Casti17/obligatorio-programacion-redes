@@ -5,5 +5,7 @@
         public static string serverIPconfigkey = "ServerIpAddress";
         public static string serverPortconfigkey = "ServerPort";
         public static string clientIPconfigkey = "ClientIpAddress";
+
+        public static string ClientPortConfigKey = "ClientPort";
     }
 }

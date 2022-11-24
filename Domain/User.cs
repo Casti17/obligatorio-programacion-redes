@@ -9,6 +9,11 @@ namespace Domain
             this.Name = name;
             this.Surname = surname;
             this.Username = username;
+            this.MessageBox = new List<Message>();
+        }
+
+        public User()
+        {
         }
 
         public string Name { get; set; }
