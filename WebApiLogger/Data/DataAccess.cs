@@ -1,31 +1,32 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
+using Microsoft.AspNetCore.Mvc;
 
 namespace WebApiLogger.Data
 {
-    public class ForecastDataAccess
+    public class DataAccess
     {
-        private List<WeatherForecast> forecasts;
+
         private object padlock;
-        private static ForecastDataAccess instance;
+        private static DataAccess instance;
         private List<string> logs;
 
         private static object singletonPadlock = new object();
-        public static ForecastDataAccess GetInstance()
+        public static DataAccess GetInstance()
         {
 
             lock (singletonPadlock)
             { // bloqueante 
                 if (instance == null)
                 {
-                    instance = new ForecastDataAccess();
+                    instance = new DataAccess();
                 }
             }
             return instance;
         }
 
-        private ForecastDataAccess()
+        private DataAccess()
         {
-            forecasts = new List<WeatherForecast>();
             logs = new List<string>();
             padlock = new object();
         }
@@ -37,13 +38,6 @@ namespace WebApiLogger.Data
                 logs.Add(log);
             }
         }
-        public void AddForecast(WeatherForecast forecast)
-        {
-            lock (padlock)
-            {
-                forecasts.Add(forecast);
-            }
-        }
 
         public string[] GetLogs()
         {
@@ -52,13 +46,10 @@ namespace WebApiLogger.Data
                 return logs.ToArray();
             }
         }
-        public WeatherForecast[] GetForecasts()
-        {
-            lock (padlock)
-            {
-                return forecasts.ToArray();
-            }
-        }
 
+        public IEnumerable<string> GetFilteredLogs(string filter)
+        {
+           return logs.ToArray().Where(x => x.Contains(filter));
+        }
     }
 }

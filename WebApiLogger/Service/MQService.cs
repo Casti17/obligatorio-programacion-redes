@@ -34,7 +34,7 @@ namespace WebApiLogger.Service
                 Console.WriteLine(" [x] Received {0}", message);
                 string log = message;
 
-                var data = ForecastDataAccess.GetInstance();
+                var data = DataAccess.GetInstance();
                 data.AddLog(log);
             };
 
