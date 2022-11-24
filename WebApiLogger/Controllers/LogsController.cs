@@ -47,10 +47,17 @@ namespace WebApiLogger.Controllers
         }
 
         [HttpGet]
-        [Route("/modify")]
+        [Route("/modifications")]
         public IEnumerable<string> GetModifyLogs(string filter)
         {
             return DataAccess.GetInstance().GetFilteredLogs("modify");
+        }
+
+        [HttpGet]
+        [Route("/deletions")]
+        public IEnumerable<string> GetDeletionsLogs(string filter)
+        {
+            return DataAccess.GetInstance().GetFilteredLogs("deletion");
         }
     }
 }
