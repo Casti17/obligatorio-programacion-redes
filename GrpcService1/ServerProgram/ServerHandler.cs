@@ -1,16 +1,171 @@
 ﻿using Communication;
 using Domain;
 using Domain.DTO;
+using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace GrpcService1.ServerProgram
 {
     public class ServerHandler
     {
-        private FileCommsHandler communication;
+        private static bool _exit = false;
+        private static readonly List<TcpClient> _clients = new List<TcpClient>();
         public LkDin lkdin;
+        private FileCommsHandler communication;
+        private TcpClient _clientTcp;
+        private MainHelper _helper;
+        private static readonly SettingsManager settingsManager = new SettingsManager();
+
+        public async Task Start()
+        {
+            /*Console.WriteLine("Server is starting...");
+            var ipEndPoint = new IPEndPoint(
+                IPAddress.Parse(settingsManager.ReadSettings(ServerConfig.serverIPconfigkey)),
+                int.Parse(settingsManager.ReadSettings(ServerConfig.serverPortconfigkey)));
+            var tcpListener = new TcpListener(ipEndPoint);
+            tcpListener.Start(100);
+            Task.Run(() => this.ListenForConnectionsAsync(tcpListener));*/
+            //Console.WriteLine("Server started listening connections on {0}-{1}", settingsManager.ReadSettings(ServerConfig.serverIPconfigkey), settingsManager.ReadSettings(ServerConfig.serverPortconfigkey));
+
+            var factory = new ConnectionFactory() { HostName = "localhost" };
+            using (var connection = factory.CreateConnection())
+            using (var channel = connection.CreateModel())
+            {
+                channel.QueueDeclare(queue: "logger",
+                    durable: false,
+                    exclusive: false,
+                    autoDelete: false,
+                    arguments: null);
+                this._helper = new MainHelper();
+
+                var tcpListener = this.StartSocketServer(channel);
+                Console.WriteLine("Bienvenido al Sistema Server");
+                Console.WriteLine("Opciones validas: ");
+                Console.WriteLine("exit -> abandonar el programa");
+                Console.WriteLine("Ingrese su opcion: ");
+                while (!_exit)
+                {
+                    var userInput = Console.ReadLine();
+                    switch (userInput)
+                    {
+                        case "exit":
+                            _exit = true;
+                            tcpListener.Stop();
+                            foreach (var client in _clients)
+                            {
+                                client.Close();
+                            }
+                            break;
+
+                        default:
+                            Console.WriteLine("Opcion incorrecta ingresada");
+                            break;
+                    }
+                }
+            }
+        }
+
+        private TcpListener StartSocketServer(IModel channel)
+        {
+            var ipEndPoint = new IPEndPoint(
+                IPAddress.Parse(settingsManager.ReadSettings(ServerConfig.serverIPconfigkey)),
+                int.Parse(settingsManager.ReadSettings(ServerConfig.serverPortconfigkey)));
+
+            var tcpListener = new TcpListener(ipEndPoint);
+
+            tcpListener.Start(100);
+
+            Task.Run(() => this.ListenForConnectionsAsync(tcpListener, channel));
+            return tcpListener;
+        }
+
+        private async Task ListenForConnectionsAsync(TcpListener listenerTcp, IModel channel)
+        {
+            while (!_exit)
+            {
+                try
+                {
+                    var clientConnected = await listenerTcp.AcceptTcpClientAsync();
+                    _clients.Add(clientConnected);
+                    Console.WriteLine("Accepted new connection...");
+                    var taskClient = new Task(async () => await this.HandleClientAsync(clientConnected, channel));
+                    taskClient.Start();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    _exit = true;
+                }
+            }
+            Console.WriteLine("Exiting....");
+        }
+
+        private async Task HandleClientAsync(TcpClient client, IModel channel)
+        {
+            this._clientTcp = client;
+            this.communication = new FileCommsHandler(this._clientTcp);
+            this.lkdin = LkDin.GetInstance();
+
+            await using (var networkStream = this._clientTcp.GetStream())
+            {
+                while (!_exit)
+                {
+                    var headerLength = ProtocolConstants.CommandLength + ProtocolConstants.DataLength;
+                    var buffer = new byte[headerLength];
+                    try
+                    {
+                        await this.communication.ReceiveDataAsync(headerLength, buffer);
+                        var header = new Header();
+                        header.SplitHeaderProtocol(buffer);
+
+                        switch (header.ICommand)
+                        {
+                            case Commands.CreateUser:
+
+                                await this.CreateUser(header, channel);
+
+                                break;
+
+                            case Commands.CreateWorkProfile:
+                                await this.CreateWorkProfile(header);
+
+                                break;
+
+                            case Commands.AssociateImageToProfile:
+
+                                break;
+
+                            case Commands.SearchProfile:
+                                await this.SearchProfileAsync(header);
+                                break;
+
+                            case Commands.SendMessage:
+                                await this.SendMessageAsync(header);
+                                break;
+
+                            case Commands.CheckInbox:
+                                await this.CheckInbox(header);
+                                break;
+
+                            default:
+                                _exit = true;
+                                break;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"El Cliente cierra la conexion -> Message {e.Message}..");
+                        return;
+                    }
+                }
+            }
+
+            this._clientTcp.Close();
+        }
 
         private async Task CheckInbox(Header header)
         {
@@ -125,19 +280,25 @@ namespace GrpcService1.ServerProgram
             }
         }
 
-        public async Task CreateUser(Header header)
+        public async Task CreateUser(Header header, IModel channel)
         {
             try
             {
+                var message2 = "chauchau";
+                this._helper.Message(message2);
+                Console.WriteLine(message2);
                 var bufferData = new byte[header.IDataLength];
                 await this.communication.ReceiveDataAsync(header.IDataLength, bufferData);
+
                 UserInfo receivedInfo = new UserInfo();
                 receivedInfo.Decode(bufferData);
-                //this.businessLogic.CreateUser(receivedInfo);
-                User newUser = receivedInfo.ToEntity();
 
-                this.lkdin.Users.Add(newUser);
-                User x = this.lkdin.Users.Find(n => n.Username.Equals(newUser.Username));
+                this._helper.CreateUser(receivedInfo.Name, receivedInfo.Surname, receivedInfo.Username);
+                /*//this.businessLogic.CreateUser(receivedInfo);*/
+                // User newUser = receivedInfo.ToEntity();
+
+                // this.lkdin.Users.Add(newUser);
+                User x = this.lkdin.Users.Find(n => n.Username.Equals(receivedInfo.Username));
                 var message = $"El usuario {x.Username} se agrego correctamente.";
                 await this.communication.SendDataAsync(message, Commands.ServerResponse);
             }

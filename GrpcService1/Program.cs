@@ -1,4 +1,4 @@
-using AppServidor;
+using GrpcService1.ServerProgram;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using System.Threading.Tasks;
@@ -7,19 +7,13 @@ namespace GrpcService1
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            var serverIpAddress = settingsManager.ReadSettings(ServerProgram.ServerConfig.serverIPconfigkey);
-            var serverPort = settingsManager.ReadSettings(ServerProgram.ServerConfig.serverPortconfigkey);
-            Console.WriteLine($"Server is starting in address {serverIpAddress} and port {serverPort}");
-
-            Server server = new Server();
-            server.StartAsync();
+            //ServerHandler server = new ServerHandler();
+            //await server.StartAsync();
+            Task.Run(() => (new ServerHandler()).Start());
             //////////////////////////////////////////////////
             CreateHostBuilder(args).Build().Run();  // Bloqueante
-
-            Task.Run(() => (new AppServidor.ServerHandler()).StartAsync()).ConfigureAwait(false);
-            CreateHostBuilder(args).Build().Run();
         }
 
         // Additional configuration is required to successfully run gRPC on macOS.

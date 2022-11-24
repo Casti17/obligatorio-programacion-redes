@@ -8,9 +8,6 @@
     <Content Remove="App.config" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Remove="Protos\greet.proto" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="App.config" />
@@ -25,6 +22,10 @@
     </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="6.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Communication\Communication.csproj" />
   </ItemGroup>
 
   <ItemGroup>
