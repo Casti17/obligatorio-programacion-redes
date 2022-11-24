@@ -1,50 +1,62 @@
 ﻿using Communication;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AdminServer.Controllers
 {
     [ApiController]
-    [Route("User")]
-    public class UserController : Controller
+    [Route("WorkProfiles")]
+    public class WorkProfileController : ControllerBase
     {
         private Greeter.GreeterClient client;
         private readonly string grpcURL;
         private static readonly SettingsManager settingsManager = new SettingsManager();
 
-        public UserController()
+        public WorkProfileController()
         {
             AppContext.SetSwitch(
                   "System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
             this.grpcURL = settingsManager.ReadSettings(ServerConfig.GrpcURL);
         }
 
-        [HttpPost("users")]
-        public async Task<IActionResult> CreateUser([FromBody] UserDTO user)
+        [HttpPost("profile")]
+        public async Task<IActionResult> CreateProfile([FromBody] CreateProfileRequest profile)
         {
             using var channel = GrpcChannel.ForAddress(this.grpcURL);
             this.client = new Greeter.GreeterClient(channel);
-            var reply = await this.client.CreateUserAsync(user);
+            var reply = await this.client.CreateProfileAsync(profile);
             return this.Ok(reply.Message);
         }
 
         [HttpPut("update")]
-        public async Task<IActionResult> ModifyUser([FromBody] ModifyUserRequest user)
+        public async Task<IActionResult> ModifyProfile([FromBody] ModifyProfileRequest profile)
         {
             using var channel = GrpcChannel.ForAddress(this.grpcURL);
             this.client = new Greeter.GreeterClient(channel);
-            var reply = await this.client.ModifyUserAsync(user);
+            var reply = await this.client.ModifyProfileAsync(profile);
             return this.Ok(reply.Message);
         }
 
         [HttpDelete]
-        public async Task<IActionResult> DeleteUser(Username userName)
+        public async Task<IActionResult> DeleteProfile([FromQuery] Username userName)
         {
             using var channel = GrpcChannel.ForAddress(this.grpcURL);
             this.client = new Greeter.GreeterClient(channel);
-            var reply = await this.client.DeleteUserAsync(userName);
+            var reply = await this.client.DeleteProfileAsync(userName);
+            return this.Ok(reply.Message);
+        }
+
+        [HttpDelete]
+        public async Task<IActionResult> DeleteProfilePicture([FromQuery] Username userName)
+        {
+            using var channel = GrpcChannel.ForAddress(this.grpcURL);
+            this.client = new Greeter.GreeterClient(channel);
+            var reply = await this.client.DeleteImageAsync(userName);
             return this.Ok(reply.Message);
         }
     }

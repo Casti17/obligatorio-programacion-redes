@@ -139,18 +139,33 @@ namespace GrpcService1
             return "Usuario creado correctamente";
         }
 
-        internal bool DeleteProfile(string username_)
+        internal string DeleteProfile(string username_)
         {
-            bool success;
-            lock (Repository.WorkProfiles)
+            try
             {
-                WorkProfile workProfileToDelete = Repository.WorkProfiles.Find(u => u.UserName == username_);
-                success = Repository.WorkProfiles.Remove(workProfileToDelete);
+                lock (this.lkdin.WorkProfiles)
+                {
+                    var profiles = this.lkdin.WorkProfiles;
+                    WorkProfile profileExists = profiles.Find(x => x.UserName.Equals(username_));
+                    if (profileExists == null)
+                    {
+                        throw new Exception("No existe un perfil con ese nombre de usuario!");
+                    }
+                    else
+                    {
+                        this.lkdin.WorkProfiles.Remove(profileExists);
+                        this.Message($"Se elimino el perfil del usuario {username_} correctamente [deletion]");
+                    }
+                }
             }
-            return success;
+            catch (Exception e)
+            {
+                throw e;
+            }
+            return "Perfil eliminado con exito!";
         }
 
-        public bool CreateWorkProfile(string username, string profilepic, string description, string skills)
+        public string CreateWorkProfile(string username, string profilepic, string description, string skills)
         {
             string[] skillSplit = skills.Split("-");
             /*if (DataValidator.IsValid(username, this._regularRegex) &&
@@ -159,49 +174,94 @@ namespace GrpcService1
             {*/
             try
             {
-                WorkProfile workProf = this.lkdin.WorkProfiles.Find(u => u.UserName.Equals(username));
-                if (workProf == null)
+                lock (this.lkdin.WorkProfiles)
                 {
+                    WorkProfile workProf = this.lkdin.WorkProfiles.Find(u => u.UserName.Equals(username));
+                    if (workProf == null)
+                    {
+                        List<string> skillsList = new List<string>();
+                        foreach (string skill in skillSplit)
+                        {
+                            skillsList.Add(skill);
+                        }
+
+                        WorkProfile workProfile = new WorkProfile(username, description, skillsList);
+                        workProfile.ProfilePic = profilepic;
+                        this.lkdin.WorkProfiles.Add(workProfile);
+                    }
+                    else
+                    {
+                        throw new Exception("Ya existe un perfil para ese nombre de usuario!");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            //}
+            return "Se agrego el perfil del usuario con exito!";
+        }
+
+        internal string ModifyProfile(string username, string? newPicturePath, string? newDescription, string? newSkills)
+        {
+            try
+            {
+                lock (this.lkdin.WorkProfiles)
+                {
+                    string[] skillSplit = newSkills.Split("-");
                     List<string> skillsList = new List<string>();
                     foreach (string skill in skillSplit)
                     {
                         skillsList.Add(skill);
                     }
-
-                    WorkProfile workProfile = new WorkProfile(username, description, skillsList);
-                    workProfile.ProfilePic = profilepic;
-                    Repository.WorkProfiles.Add(workProfile);
+                    var profiles = this.lkdin.WorkProfiles;
+                    WorkProfile profileExists = profiles.Find(x => x.UserName.Equals(username));
+                    if (profileExists != null)
+                    {
+                        profileExists.ProfilePic = newPicturePath;
+                        profileExists.Description = newDescription;
+                        profileExists.Skills = skillsList;
+                        this.Message($"Se modifico el perfil de {username} correctamente. [modify]");
+                    }
+                    else
+                    {
+                        throw new Exception("No existe un perfil con ese nombre de usuario.");
+                    }
                 }
             }
-            catch
+            catch (Exception e)
             {
-                throw new Exception("Ya existe un perfil para ese nombre de usuario");
+                throw e;
             }
-            //}
-            return true;
+            return "Perfil modificado correctamente";
         }
 
-        internal bool ModifyProfile(string username, string? newPicturePath, string? newDescription, string? newSkills)
+        internal string DeleteImage(string username_)
         {
-            bool success = false;
-            lock (Repository.WorkProfiles)
+            try
             {
-                WorkProfile profileToModify = Repository.WorkProfiles.Find(p => p.UserName == username);
-                if (!newPicturePath.Equals(string.Empty))
+                lock (this.lkdin.WorkProfiles)
                 {
-                    profileToModify.ProfilePic = newPicturePath;
+                    var profiles = this.lkdin.WorkProfiles;
+                    WorkProfile profileExists = profiles.Find(x => x.UserName.Equals(username_));
+                    if (profileExists == null)
+                    {
+                        throw new Exception("No existe un perfil con ese nombre de usuario!");
+                    }
+                    else
+                    {
+                        //this.lkdin.WorkProfiles.Remove(profileExists);
+                        profileExists.ProfilePic = "";
+                        this.Message($"Se elimino la imagen del perfil del usuario {username_} correctamente [deletion]");
+                    }
                 }
-                if (!newDescription.Equals(string.Empty))
-                {
-                    profileToModify.Description = newDescription;
-                }
-                if (!newSkills.Equals(string.Empty))
-                {
-                    //profileToModify.Skills = newSkills;
-                }
-                success = true;
             }
-            return success;
+            catch (Exception e)
+            {
+                throw e;
+            }
+            return "Imagen eliminada con exito!";
         }
 
         public void AssociateImageToProfile(string username, string path)

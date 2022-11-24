@@ -266,6 +266,11 @@ namespace GrpcService1.ServerProgram
                 await this.communication.ReceiveDataAsync(header.IDataLength, bufferData);
                 ProfileInfo receivedProfile = new ProfileInfo();
                 receivedProfile.Decode(bufferData);
+                //this._helper.CreateWorkProfile()
+                /*
+                 *
+                    VER QUE HACER CON LA PARTE DE FILE HANDLER
+                 */
                 WorkProfile newProfile = receivedProfile.ToEntity();
                 this.lkdin.WorkProfiles.Add(newProfile);
                 FileStreamHandler fh = new FileStreamHandler();
@@ -284,9 +289,6 @@ namespace GrpcService1.ServerProgram
         {
             try
             {
-                var message2 = "chauchau";
-                this._helper.Message(message2);
-                Console.WriteLine(message2);
                 var bufferData = new byte[header.IDataLength];
                 await this.communication.ReceiveDataAsync(header.IDataLength, bufferData);
 
@@ -298,8 +300,8 @@ namespace GrpcService1.ServerProgram
                 // User newUser = receivedInfo.ToEntity();
 
                 // this.lkdin.Users.Add(newUser);
-                User x = this.lkdin.Users.Find(n => n.Username.Equals(receivedInfo.Username));
-                var message = $"El usuario {x.Username} se agrego correctamente.";
+                //User x = this.lkdin.Users.Find(n => n.Username.Equals(receivedInfo.Username));
+                var message = $"El usuario {receivedInfo.Username} se agrego correctamente.";
                 await this.communication.SendDataAsync(message, Commands.ServerResponse);
             }
             catch (Exception e)

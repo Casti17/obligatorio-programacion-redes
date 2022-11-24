@@ -13,8 +13,9 @@ service Greeter {
   rpc CreateProfile (CreateProfileRequest) returns (MessageReply);
   rpc DeleteProfile (Username) returns (MessageReply);
   rpc ModifyProfile (ModifyProfileRequest) returns (MessageReply);
+  rpc DeleteImage (Username) returns (MessageReply);
   /*rpc DeleteProfile (StandardRequest) returns (StandardResponse);
-  rpc DeleteImage (StandardRequest) returns (StandardResponse);
+  
   rpc ReturnGame (StandardRequest) returns (StandardResponse);*/
 }
 

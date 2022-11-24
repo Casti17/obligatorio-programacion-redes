@@ -39,8 +39,8 @@ namespace GrpcService1
         {
             try
             {
-                bool couldDelete = this.mainHelper.DeleteUser(request.Username_);
-                string message = couldDelete ? "Usuario eliminado correctamente" : "No se pudo eliminar usuario";
+                string message = this.mainHelper.DeleteUser(request.Username_);
+                //string message = couldDelete ? "Usuario eliminado correctamente" : "No se pudo eliminar usuario";
                 return Task.FromResult(new MessageReply { Message = message });
             }
             catch (Exception e)
@@ -70,8 +70,8 @@ namespace GrpcService1
         {
             try
             {
-                bool couldUpdate = this.mainHelper.CreateWorkProfile(request.Username, request.PicturePath, request.Description, request.Skills);
-                string message = couldUpdate ? "Perfil creado correctamente" : "No se pudo crear perfil";
+                string message = this.mainHelper.CreateWorkProfile(request.Username, request.PicturePath, request.Description, request.Skills);
+                //string message = couldUpdate ? "Perfil creado correctamente" : "No se pudo crear perfil";
                 return Task.FromResult(new MessageReply { Message = message });
             }
             catch (Exception e)
@@ -86,8 +86,8 @@ namespace GrpcService1
         {
             try
             {
-                bool couldDelete = this.mainHelper.DeleteProfile(request.Username_);
-                string message = couldDelete ? "Usuario eliminado correctamente" : "No se pudo eliminar usuario";
+                string message = this.mainHelper.DeleteProfile(request.Username_);
+                //string message = couldDelete ? "Usuario eliminado correctamente" : "No se pudo eliminar usuario";
                 return Task.FromResult(new MessageReply { Message = message });
             }
             catch (Exception e)
@@ -102,8 +102,24 @@ namespace GrpcService1
         {
             try
             {
-                bool couldUpdate = this.mainHelper.ModifyProfile(request.Username, request.NewPicturePath, request.NewDescription, request.NewSkills);
-                string message = couldUpdate ? "Usuario actualizado correctamente" : "No se pudo actualizar usuario";
+                string message = this.mainHelper.ModifyProfile(request.Username, request.NewPicturePath, request.NewDescription, request.NewSkills);
+                //string message = couldUpdate ? "Usuario actualizado correctamente" : "No se pudo actualizar usuario";
+                return Task.FromResult(new MessageReply { Message = message });
+            }
+            catch (Exception e)
+            {
+                return Task.FromResult(new MessageReply()
+                { Message = e.Message }
+                );
+            }
+        }
+
+        public override Task<MessageReply> DeleteImage(Username request, ServerCallContext context)
+        {
+            try
+            {
+                string message = this.mainHelper.DeleteImage(request.Username_);
+                //string message = couldDelete ? "Usuario eliminado correctamente" : "No se pudo eliminar usuario";
                 return Task.FromResult(new MessageReply { Message = message });
             }
             catch (Exception e)
